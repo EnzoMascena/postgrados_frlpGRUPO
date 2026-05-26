@@ -24,7 +24,7 @@
 | Mascena Enzo Mario           | Líder / Desarrollador Principal | [@EnzoMascena](https://github.com/EnzoMascena) | enzo.mascena.dev@gmail.com         |
 | Garrote Geronino    | Diseñador UI/UX / Frontend         | [@GeronimoGarrote](https://github.com/GeronimoGarrote)   | garrote.gero@gmail.com            |
 | Buscaglia Francisco Nicolas  | Desarrollador Backend        | [@FranBusqui](https://github.com/FranBusqui)   | franbuscag@gmail.com            |
-| Nombre Compañero 4  | Diseñador / Frontend         | [@usuario4](https://github.com/usuario4)   | email4@ejemplo.com            |
+| Goñi Dolores  | Diseñador / Frontend         | [@lologoni](https://github.com/lologoni)   | lolagoni2004@gmail.com            |
 | Nombre Compañero 5  | Diseñador / Frontend         | [@usuario5](https://github.com/usuario5)   | email5@ejemplo.com            |
 ### Reglas básicas del equipo
 
