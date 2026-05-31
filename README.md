@@ -25,7 +25,7 @@
 | Garrote Geronino    | Diseñador UI/UX / Frontend         | [@GeronimoGarrote](https://github.com/GeronimoGarrote)   | garrote.gero@gmail.com            |
 | Buscaglia Francisco Nicolas  | Desarrollador Backend        | [@FranBusqui](https://github.com/FranBusqui)   | franbuscag@gmail.com            |
 | Goñi Dolores  | Diseñador / Frontend         | [@lologoni](https://github.com/lologoni)   | lolagoni2004@gmail.com            |
-| Nombre Compañero 5  | Diseñador / Frontend         | [@usuario5](https://github.com/usuario5)   | email5@ejemplo.com            |
+| De Paola Luca | Desarrollador / Backend        | [@LucaDP16](https://github.com/LucaDP16)   | ludepa3110@gmail.com            |
 ### Reglas básicas del equipo
 
 - **Commits**: Usa mensajes claros y en presente (ej: "Agrega login con GitHub"). Sigue la convención [Conventional Commits](https://www.conventionalcommits.org) si es posible.
