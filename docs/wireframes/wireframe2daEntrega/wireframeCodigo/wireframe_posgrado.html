@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistema de Posgrado UTN FRLP — Wireframe</title>
+
+  <!--Favicom-->
+  <link rel="icon" type="image/png" href="images/logo-utn.png">
+
+  <!-- Tipografía -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <!-- Íconos Tabler -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.34.0/tabler-icons.min.css">
+  
+  <!-- Estilos propios -->
+  <link rel="stylesheet" href="wireframe_posgrado.css">
+</head>
+
+<body>
+
+  <!-- ════════════════════════════════════════════════════
+       LAYOUT PRINCIPAL
+       ════════════════════════════════════════════════════ -->
+<h2 class="sr-only">Wireframe del Sistema de Gestión de Posgrado - UTN FRLP</h2>
+
+<div class="app">
+  <div class="sidebar">
+    <div class="sidebar-logo">
+      <div class="faculty">UTN · FRLP</div>
+      <div class="system">Sistema Posgrado</div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-label">Aspirante</div>
+      <div class="nav-item active" onclick="showScreen('inscripcion',this)">
+        <i class="ti ti-clipboard-list" aria-hidden="true"></i> Inscripción
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-label">Conducción</div>
+      <div class="nav-item" onclick="showScreen('dashboard',this)">
+        <i class="ti ti-layout-dashboard" aria-hidden="true"></i> Dashboard
+      </div>
+      <div class="nav-item" onclick="showScreen('legajo',this)">
+        <i class="ti ti-user-circle" aria-hidden="true"></i> Legajo
+      </div>
+      <div class="nav-item" onclick="showScreen('estadisticas',this)">
+        <i class="ti ti-chart-bar" aria-hidden="true"></i> Estadísticas
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-label">Docentes</div>
+      <div class="nav-item" onclick="showScreen('docente',this)">
+        <i class="ti ti-table" aria-hidden="true"></i> Planilla
+      </div>
+    </div>
+
+    <div style="margin-top:auto;padding:12px 16px;border-top:0.5px solid var(--border)">
+      <div style="font-size:11px;color:var(--text-muted);display:flex;align-items:center;gap:6px">
+        <div style="width:8px;height:8px;border-radius:50%;background:#22c55e;flex-shrink:0"></div>
+        Período abierto
+      </div>
+    </div>
+  </div>
+
+  <div class="main">
+
+    <!-- INSCRIPCION -->
+    <div id="s-inscripcion" class="screen active">
+      <div class="topbar">
+        <div class="topbar-title"><i class="ti ti-clipboard-list" style="font-size:15px;margin-right:4px" aria-hidden="true"></i>Formulario de preinscripción</div>
+        <div class="topbar-right">
+          <span class="badge badge-info">Período abierto</span>
+          <button class="btn" onclick="toggleTheme()">
+            <i class="ti ti-moon"></i>
+            Tema
+          </button>
+        </div>
+      </div>
+      <div class="content">
+
+        <div class="card">
+          <div class="card-title"><i class="ti ti-school" aria-hidden="true"></i>Carrera</div>
+          <div class="form-group" style="max-width:400px">
+            <label>Carrera/s a inscribirse *</label>
+            <select><option>— Seleccionar carrera —</option><option>Especialización en Ingeniería en Sistemas</option><option>Maestría en Ingeniería en Sistemas</option><option>Doctorado</option></select>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title"><i class="ti ti-user" aria-hidden="true"></i>Datos personales</div>
+          <div class="form-grid" style="margin-bottom:12px">
+            <div class="form-group"><label>Apellido *</label><input type="text" placeholder="Mascena"></div>
+            <div class="form-group"><label>Nombre *</label><input type="text" placeholder="Enzo"></div>
+            <div class="form-group"><label>Nacionalidad *</label><input type="text" placeholder="Argentina"></div>
+            <div class="form-group"><label>DNI / Pasaporte *</label><input type="text" placeholder="38.500.000"></div>
+            <div class="form-group"><label>Teléfono móvil *</label><input type="text" placeholder="+54 221 ..."></div>
+            <div class="form-group"><label>Teléfono fijo</label><input type="text" placeholder="0221 ..."></div>
+            <div class="form-group"><label>Correo electrónico *</label><input type="email" placeholder="nombre@email.com"></div>
+            <div class="form-group"><label>Correo alternativo</label><input type="email" placeholder="otro@email.com"></div>
+          </div>
+          <div class="form-grid-3">
+            <div class="form-group"><label>Domicilio *</label><input type="text" placeholder="Calle 123"></div>
+            <div class="form-group"><label>Ciudad *</label><input type="text" placeholder="La Plata"></div>
+            <div class="form-group"><label>Provincia *</label><input type="text" placeholder="Buenos Aires"></div>
+            <div class="form-group"><label>País *</label><input type="text" placeholder="Argentina"></div>
+            <div class="form-group"><label>Título de grado *</label><input type="text" placeholder="Ing. en Sistemas"></div>
+            <div class="form-group"><label>¿Cómo conoció la oferta? *</label>
+              <select><option>— Seleccionar —</option><option>Sitio web UTN</option><option>Otros sitios web</option><option>Egresados UTN FRLP</option><option>Comentarios de colegas</option><option>Otros</option></select>
+            </div>
+          </div>
+          <div class="form-group" style="margin-top:12px">
+            <label>Motivaciones para realizar la carrera *</label>
+            <textarea placeholder="Describí brevemente tus motivaciones..."></textarea>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title"><i class="ti ti-file-upload" aria-hidden="true"></i>Documentación requerida (PDF)</div>
+          <div class="form-grid">
+            <div>
+              <div style="font-size:11px;color:var(--text-secondary);margin-bottom:6px;font-weight:500">Copia de DNI / Pasaporte *</div>
+              <div class="upload-box">
+                <i class="ti ti-upload" aria-hidden="true"></i>
+                <span>Seleccionar archivo</span>
+                <small>JPG, PNG o PDF · máx 5 MB</small>
+              </div>
+            </div>
+            <div>
+              <div style="font-size:11px;color:var(--text-secondary);margin-bottom:6px;font-weight:500">Formulario de preinscripción / inscripción *</div>
+              <div class="upload-box">
+                <i class="ti ti-upload" aria-hidden="true"></i>
+                <span>Seleccionar archivo PDF</span>
+                <small>Con firma analógica · máx 5 MB</small>
+              </div>
+            </div>
+            <div>
+              <div style="font-size:11px;color:var(--text-secondary);margin-bottom:6px;font-weight:500">Partida de nacimiento *</div>
+              <div class="upload-box">
+                <i class="ti ti-upload" aria-hidden="true"></i>
+                <span>Seleccionar archivo PDF</span>
+                <small>máx 5 MB</small>
+              </div>
+            </div>
+            <div>
+              <div style="font-size:11px;color:var(--text-secondary);margin-bottom:6px;font-weight:500">Constancia CUIT / CUIL *</div>
+              <div class="upload-box">
+                <i class="ti ti-upload" aria-hidden="true"></i>
+                <span>Seleccionar archivo PDF</span>
+                <small>máx 5 MB</small>
+              </div>
+            </div>
+            <div>
+              <div style="font-size:11px;color:var(--text-secondary);margin-bottom:6px;font-weight:500">Copia del título de grado *</div>
+              <div class="upload-box">
+                <i class="ti ti-upload" aria-hidden="true"></i>
+                <span>Seleccionar archivo PDF</span>
+                <small>máx 5 MB</small>
+              </div>
+            </div>
+            <div>
+              <div style="font-size:11px;color:var(--text-secondary);margin-bottom:6px;font-weight:500">Copia del título de posgrado <span style="color:var(--text-muted);font-weight:400">(opcional)</span></div>
+              <div class="upload-box">
+                <i class="ti ti-upload" aria-hidden="true"></i>
+                <span>Seleccionar archivo PDF</span>
+                <small>Si lo tuviera · máx 5 MB</small>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title"><i class="ti ti-discount" aria-hidden="true"></i>Solicitud de beca <span style="font-size:11px;font-weight:400;color:var(--text-muted)">(opcional)</span></div>
+          <div class="beca-options" style="max-width:320px;margin-bottom:12px">
+            <div class="beca-opt" onclick="toggleBeca(this)">
+              <div class="pct">30%</div>
+              <span>Beca parcial</span>
+            </div>
+            <div class="beca-opt" onclick="toggleBeca(this)">
+              <div class="pct">100%</div>
+              <span>Beca completa</span>
+            </div>
+          </div>
+          <div class="form-group" style="max-width:320px">
+            <label>Formulario de beca con firma analógica (PDF)</label>
+            <div class="upload-box">
+              <i class="ti ti-upload" aria-hidden="true"></i>
+              <span>Seleccionar archivo PDF</span>
+              <small>máx 5 MB</small>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex;justify-content:flex-end;gap:8px;padding-bottom:8px">
+          <button class="btn">Guardar borrador</button>
+          <button class="btn btn-primary"><i class="ti ti-send" aria-hidden="true"></i>Enviar inscripción</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- DASHBOARD CONDUCCION -->
+    <div id="s-dashboard" class="screen">
+      <div class="topbar">
+        <div class="topbar-title"><i class="ti ti-layout-dashboard" style="font-size:15px;margin-right:4px" aria-hidden="true"></i>Dashboard · Conducción</div>
+        <div class="topbar-right">
+          <button class="btn" onclick="toggleTheme()">
+            <i class="ti ti-moon"></i>
+            Tema
+          </button>
+          <select style="font-size:12px;padding:4px 8px;border-radius:var(--radius-input);border:0.5px solid var(--border-strong);background:var(--bg-surface);color:var(--text-primary);font-family:var(--font)">
+            <option>Cohorte 2026</option><option>Cohorte 2025</option><option>Cohorte 2024</option>
+          </select>
+          <div class="period-toggle">
+            <span style="font-size:11px;color:var(--text-secondary)">Período de inscripción</span>
+            <div class="toggle-sw" onclick="togglePeriodo(this)" title="Alternar período"></div>
+            <span style="font-size:11px;color:#22c55e;font-weight:500">Abierto</span>
+          </div>
+        </div>
+      </div>
+      <div class="content">
+        <div class="stat-grid">
+          <div class="stat-card">
+            <div class="label">Total inscriptos</div>
+            <div class="value">47</div>
+            <div class="sub">Cohorte 2026</div>
+          </div>
+          <div class="stat-card">
+            <div class="label">Legajos completos</div>
+            <div class="value">31</div>
+            <div class="sub">66% del total</div>
+          </div>
+          <div class="stat-card">
+            <div class="label">Legajos incompletos</div>
+            <div class="value">16</div>
+            <div class="sub">Pendientes de doc.</div>
+          </div>
+          <div class="stat-card">
+            <div class="label">Con beca</div>
+            <div class="value">9</div>
+            <div class="sub">30% → 5 · 100% → 4</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="section-header">
+            <div class="card-title" style="margin:0"><i class="ti ti-users" aria-hidden="true"></i>Inscriptos — Cohorte 2026</div>
+            <div style="display:flex;gap:8px;align-items:center">
+              <input type="text" placeholder="Buscar por nombre o DNI..." style="font-size:12px;padding:5px 10px;border-radius:var(--radius-input);border:0.5px solid var(--border-strong);background:var(--bg-surface);color:var(--text-primary);font-family:var(--font);width:220px">
+              <button class="btn"><i class="ti ti-download" aria-hidden="true"></i>Exportar</button>
+            </div>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Apellido y nombre</th>
+                <th>DNI</th>
+                <th>Carrera</th>
+                <th>Beca</th>
+                <th>Estado legajo</th>
+                <th>Completitud</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style="font-weight:500">Mascena, Enzo</td>
+                <td style="color:var(--text-secondary)">38.500.000</td>
+                <td>Esp. Ing. Sistemas</td>
+                <td><span class="chip chip-pendiente">Sin beca</span></td>
+                <td><span class="chip chip-aprobado"><span class="semaforo s-verde" style="width:7px;height:7px"></span> Completo</span></td>
+                <td>
+                  <div style="display:flex;align-items:center;gap:6px">
+                    <div class="progress-bar" style="width:80px"><div class="progress-fill pf-green" style="width:100%"></div></div>
+                    <span style="font-size:10px;color:var(--text-secondary)">100%</span>
+                  </div>
+                </td>
+                <td><button class="btn" style="padding:3px 10px;font-size:11px">Ver legajo</button></td>
+              </tr>
+              <tr>
+                <td style="font-weight:500">García, María</td>
+                <td style="color:var(--text-secondary)">41.200.111</td>
+                <td>Maestría</td>
+                <td><span class="chip chip-info">30%</span></td>
+                <td><span class="chip chip-regular"><span class="semaforo s-amarillo" style="width:7px;height:7px"></span> Incompleto</span></td>
+                <td>
+                  <div style="display:flex;align-items:center;gap:6px">
+                    <div class="progress-bar" style="width:80px"><div class="progress-fill pf-yellow" style="width:67%"></div></div>
+                    <span style="font-size:10px;color:var(--text-secondary)">67%</span>
+                  </div>
+                </td>
+                <td><button class="btn" style="padding:3px 10px;font-size:11px">Ver legajo</button></td>
+              </tr>
+              <tr>
+                <td style="font-weight:500">López, Tomás</td>
+                <td style="color:var(--text-secondary)">39.800.444</td>
+                <td>Doctorado</td>
+                <td><span class="chip chip-success">100%</span></td>
+                <td><span class="chip chip-pendiente"><span class="semaforo s-rojo" style="width:7px;height:7px"></span> Incompleto</span></td>
+                <td>
+                  <div style="display:flex;align-items:center;gap:6px">
+                    <div class="progress-bar" style="width:80px"><div class="progress-fill pf-red" style="width:33%"></div></div>
+                    <span style="font-size:10px;color:var(--text-secondary)">33%</span>
+                  </div>
+                </td>
+                <td><button class="btn" style="padding:3px 10px;font-size:11px">Ver legajo</button></td>
+              </tr>
+              <tr>
+                <td style="font-weight:500">Ramírez, Lucía</td>
+                <td style="color:var(--text-secondary)">40.500.222</td>
+                <td>Esp. Ing. Sistemas</td>
+                <td><span class="chip chip-pendiente">Sin beca</span></td>
+                <td><span class="chip chip-aprobado"><span class="semaforo s-verde" style="width:7px;height:7px"></span> Completo</span></td>
+                <td>
+                  <div style="display:flex;align-items:center;gap:6px">
+                    <div class="progress-bar" style="width:80px"><div class="progress-fill pf-green" style="width:100%"></div></div>
+                    <span style="font-size:10px;color:var(--text-secondary)">100%</span>
+                  </div>
+                </td>
+                <td><button class="btn" style="padding:3px 10px;font-size:11px">Ver legajo</button></td>
+              </tr>
+            </tbody>
+          </table>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:10px;border-top:0.5px solid var(--border)">
+            <span style="font-size:11px;color:var(--text-secondary)">Mostrando 4 de 47 inscriptos</span>
+            <div style="display:flex;gap:4px">
+              <button class="btn" style="padding:3px 10px;font-size:11px">← Ant.</button>
+              <button class="btn" style="padding:3px 10px;font-size:11px">Sig. →</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LEGAJO -->
+    <div id="s-legajo" class="screen">
+      <div class="topbar">
+        <div class="topbar-title">
+          <i class="ti ti-user-circle" style="font-size:15px;margin-right:4px" aria-hidden="true"></i>Legajo académico · Mascena, Enzo
+        </div>
+        <div class="topbar-right">
+          <button class="btn" onclick="toggleTheme()">
+            <i class="ti ti-moon"></i>
+            Tema
+          </button>
+          <button class="btn"><i class="ti ti-download" aria-hidden="true"></i>Descargar legajo</button>
+          <select style="font-size:12px;padding:4px 8px;border-radius:var(--radius-input);border:0.5px solid var(--border-strong);background:var(--bg-surface);color:var(--text-primary);font-family:var(--font)">
+            <option>Cohorte 2026</option>
+          </select>
+        </div>
+      </div>
+      <div class="content">
+        <div class="alert-box">
+          <i class="ti ti-alert-triangle" aria-hidden="true"></i>
+          <span>Seminario <strong>Métodos Cuantitativos</strong> vence en 15 días (30/06/2026). Se recomienda revisar el estado del acta de examen.</span>
+        </div>
+
+        <div class="two-col">
+          <div class="card">
+            <div class="card-title"><i class="ti ti-user" aria-hidden="true"></i>Datos del estudiante</div>
+            <table>
+              <tr><td style="color:var(--text-secondary);font-size:11px;width:40%">Carrera</td><td>Especialización en Ing. Sistemas</td></tr>
+              <tr><td style="color:var(--text-secondary);font-size:11px">Cohorte</td><td>2026</td></tr>
+              <tr><td style="color:var(--text-secondary);font-size:11px">DNI</td><td>38.500.000</td></tr>
+              <tr><td style="color:var(--text-secondary);font-size:11px">Correo</td><td>enzo@email.com</td></tr>
+              <tr><td style="color:var(--text-secondary);font-size:11px">Título grado</td><td>Ing. en Sistemas</td></tr>
+              <tr><td style="color:var(--text-secondary);font-size:11px">Estado legajo</td><td><span class="chip chip-aprobado">Completo</span></td></tr>
+            </table>
+          </div>
+
+          <div class="card">
+            <div class="card-title"><i class="ti ti-traffic-cone" aria-hidden="true"></i>Estado de avance</div>
+            <div style="display:flex;align-items:center;gap:16px;margin-bottom:14px">
+              <div class="semaforo-big" style="background:#fef9c3"><span style="font-size:18px">??</span></div>
+              <div>
+                <div style="font-weight:500;font-size:13px">En progreso</div>
+                <div style="font-size:11px;color:var(--text-secondary);margin-top:2px">3 de 6 seminarios aprobados · TFI en elaboración</div>
+              </div>
+            </div>
+            <div class="semaforo-legend">
+              <div class="semaforo-legend-item"><div class="semaforo s-verde"></div>Al día</div>
+              <div class="semaforo-legend-item"><div class="semaforo s-amarillo"></div>En progreso</div>
+              <div class="semaforo-legend-item"><div class="semaforo s-rojo"></div>En riesgo</div>
+            </div>
+            <hr class="divider">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+              <div class="stat-card" style="padding:8px 10px">
+                <div class="label" style="font-size:10px">Seminarios aprobados</div>
+                <div class="value" style="font-size:18px">3 / 6</div>
+              </div>
+              <div class="stat-card" style="padding:8px 10px">
+                <div class="label" style="font-size:10px">Asistencia promedio</div>
+                <div class="value" style="font-size:18px">87%</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title"><i class="ti ti-books" aria-hidden="true"></i>Seminarios</div>
+          <table>
+            <thead>
+              <tr>
+                <th>Seminario</th>
+                <th>Asistencia</th>
+                <th>Condición</th>
+                <th>Calificación final</th>
+                <th>Fecha acta</th>
+                <th>Vencimiento</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Gestión de Proyectos de Software</td>
+                <td>
+                  <div style="display:flex;align-items:center;gap:5px">
+                    <div class="progress-bar" style="width:60px"><div class="progress-fill pf-green" style="width:93%"></div></div>
+                    <span style="font-size:11px">93%</span>
+                  </div>
+                </td>
+                <td><span class="chip chip-aprobado">Aprobado</span></td>
+                <td style="font-weight:500">8</td>
+                <td style="color:var(--text-secondary)">15/03/2026</td>
+                <td style="color:var(--text-secondary)">—</td>
+              </tr>
+              <tr>
+                <td>Arquitecturas de Software</td>
+                <td>
+                  <div style="display:flex;align-items:center;gap:5px">
+                    <div class="progress-bar" style="width:60px"><div class="progress-fill pf-green" style="width:88%"></div></div>
+                    <span style="font-size:11px">88%</span>
+                  </div>
+                </td>
+                <td><span class="chip chip-aprobado">Aprobado</span></td>
+                <td style="font-weight:500">9</td>
+                <td style="color:var(--text-secondary)">20/04/2026</td>
+                <td style="color:var(--text-secondary)">—</td>
+              </tr>
+              <tr>
+                <td>Seguridad Informática</td>
+                <td>
+                  <div style="display:flex;align-items:center;gap:5px">
+                    <div class="progress-bar" style="width:60px"><div class="progress-fill pf-green" style="width:80%"></div></div>
+                    <span style="font-size:11px">80%</span>
+                  </div>
+                </td>
+                <td><span class="chip chip-aprobado">Aprobado</span></td>
+                <td style="font-weight:500">7</td>
+                <td style="color:var(--text-secondary)">10/05/2026</td>
+                <td style="color:var(--text-secondary)">—</td>
+              </tr>
+              <tr>
+                <td>Métodos Cuantitativos</td>
+                <td>
+                  <div style="display:flex;align-items:center;gap:5px">
+                    <div class="progress-bar" style="width:60px"><div class="progress-fill pf-yellow" style="width:72%"></div></div>
+                    <span style="font-size:11px">72%</span>
+                  </div>
+                </td>
+                <td><span class="chip chip-cursando">Cursando</span></td>
+                <td style="color:var(--text-muted)">—</td>
+                <td style="color:var(--text-muted)">—</td>
+                <td style="color:#f59e0b;font-weight:500">30/06/2026 ⚠</td>
+              </tr>
+              <tr>
+                <td>Innovación y Tecnología</td>
+                <td>
+                  <div style="display:flex;align-items:center;gap:5px">
+                    <div class="progress-bar" style="width:60px"><div class="progress-fill pf-green" style="width:0%"></div></div>
+                    <span style="font-size:11px">—</span>
+                  </div>
+                </td>
+                <td><span class="chip chip-pendiente">Pendiente</span></td>
+                <td style="color:var(--text-muted)">—</td>
+                <td style="color:var(--text-muted)">—</td>
+                <td style="color:var(--text-secondary)">31/10/2026</td>
+              </tr>
+              <tr>
+                <td>Trabajo Final Integrador</td>
+                <td style="color:var(--text-muted)">—</td>
+                <td><span class="chip chip-cursando">En elaboración</span></td>
+                <td style="color:var(--text-muted)">—</td>
+                <td style="color:var(--text-muted)">—</td>
+                <td style="color:var(--text-secondary)">30/11/2026</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="two-col">
+          <div class="card">
+            <div class="card-title"><i class="ti ti-file-text" aria-hidden="true"></i>Trabajo Final Integrador</div>
+            <div class="form-grid">
+              <div class="form-group"><label>Título del TFI</label><input type="text" value="Sistema de gestión académica para..."></div>
+              <div class="form-group"><label>Director/a</label><input type="text" value="Dr. Pérez, Juan"></div>
+              <div class="form-group"><label>Aprobación CPR</label><input type="text" placeholder="Fecha pendiente"></div>
+              <div class="form-group"><label>N° de resolución</label><input type="text" placeholder="—"></div>
+            </div>
+            <div style="margin-top:10px;display:flex;justify-content:flex-end">
+              <button class="btn btn-primary" style="font-size:11px"><i class="ti ti-device-floppy" aria-hidden="true"></i>Guardar</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-title"><i class="ti ti-messages" aria-hidden="true"></i>Seguimiento de tutorías</div>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <div style="background:var(--bg-surface);border-radius:var(--radius-input);padding:10px;font-size:12px">
+                <div style="font-weight:500;margin-bottom:2px">15/04/2026 — Tutoría inicial</div>
+                <div style="color:var(--text-secondary)">Se definió enfoque del TFI. Próxima entrega: borrador cap. 1.</div>
+              </div>
+              <div style="background:var(--bg-surface);border-radius:var(--radius-input);padding:10px;font-size:12px">
+                <div style="font-weight:500;margin-bottom:2px">10/05/2026 — Revisión capítulo 1</div>
+                <div style="color:var(--text-secondary)">Observaciones menores. Se aprueba avance hacia cap. 2.</div>
+              </div>
+            </div>
+            <button class="btn" style="width:100%;margin-top:10px;justify-content:center;font-size:11px"><i class="ti ti-plus" aria-hidden="true"></i>Registrar tutoría</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PLANILLA DOCENTE -->
+    <div id="s-docente" class="screen">
+      <div class="topbar">
+        <div class="topbar-title"><i class="ti ti-table" style="font-size:15px;margin-right:4px" aria-hidden="true"></i>Planilla docente · Gestión de Proyectos de Software</div>
+        <div class="topbar-right">
+          <button class="btn" onclick="toggleTheme()">
+            <i class="ti ti-moon"></i>
+            Tema
+          </button>
+          <button class="btn"><i class="ti ti-download" aria-hidden="true"></i>Descargar planilla</button>
+        </div>
+      </div>
+      <div class="content">
+        <div class="alert-box">
+          <i class="ti ti-mail" aria-hidden="true"></i>
+          <span>Si no completa la carga antes del <strong>30/06/2026</strong> recibirá un recordatorio automático por correo electrónico.</span>
+        </div>
+
+        <div class="two-col" style="margin-bottom:16px">
+          <div class="card" style="margin-bottom:0">
+            <div class="card-title"><i class="ti ti-info-circle" aria-hidden="true"></i>Datos del seminario</div>
+            <table>
+              <tr><td style="color:var(--text-secondary);font-size:11px;width:40%">Seminario</td><td>Gestión de Proyectos de Software</td></tr>
+              <tr><td style="color:var(--text-secondary);font-size:11px">Docente</td><td>Ing. Rodríguez, Ana</td></tr>
+              <tr><td style="color:var(--text-secondary);font-size:11px">Carrera</td><td>Esp. Ing. Sistemas</td></tr>
+              <tr><td style="color:var(--text-secondary);font-size:11px">Cohorte</td><td>2026</td></tr>
+              <tr><td style="color:var(--text-secondary);font-size:11px">Asistencia mínima</td><td style="font-weight:500;color:var(--text-primary)">75%</td></tr>
+            </table>
+          </div>
+          <div class="card" style="margin-bottom:0">
+            <div class="card-title"><i class="ti ti-calendar" aria-hidden="true"></i>Fechas de cursada registradas</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap">
+              <span class="chip chip-aprobado">12/03</span>
+              <span class="chip chip-aprobado">19/03</span>
+              <span class="chip chip-aprobado">26/03</span>
+              <span class="chip chip-aprobado">02/04</span>
+              <span class="chip chip-aprobado">09/04</span>
+              <span class="chip chip-aprobado">16/04</span>
+              <span class="chip chip-cursando">23/04</span>
+              <button class="btn" style="font-size:11px;padding:2px 8px"><i class="ti ti-plus" aria-hidden="true"></i>Nueva fecha</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title"><i class="ti ti-users" aria-hidden="true"></i>Registro de asistencia y calificaciones</div>
+          <div style="overflow-x:auto">
+            <table style="min-width:680px">
+              <thead>
+                <tr>
+                  <th style="min-width:140px">Estudiante</th>
+                  <th>Email</th>
+                  <th>Carrera grado</th>
+                  <th style="text-align:center">12/03</th>
+                  <th style="text-align:center">19/03</th>
+                  <th style="text-align:center">26/03</th>
+                  <th style="text-align:center">02/04</th>
+                  <th style="text-align:center">Asistencia</th>
+                  <th style="text-align:center">Nota final</th>
+                  <th style="text-align:center">Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td style="font-weight:500">Mascena, Enzo</td>
+                  <td style="color:var(--text-secondary);font-size:11px">enzo@mail.com</td>
+                  <td style="font-size:11px;color:var(--text-secondary)">Ing. Sistemas</td>
+                  <td style="text-align:center"><div class="att-cell att-p" style="margin:auto" onclick="toggleAsistencia(this)">P</div></td>
+                  <td style="text-align:center"><div class="att-cell att-p" style="margin:auto" onclick="toggleAsistencia(this)">P</div></td>
+                  <td style="text-align:center"><div class="att-cell att-a" style="margin:auto" onclick="toggleAsistencia(this)">A</div></td>
+                  <td style="text-align:center"><div class="att-cell att-p" style="margin:auto" onclick="toggleAsistencia(this)">P</div></td>
+                  <td style="text-align:center">
+                    <div style="display:flex;align-items:center;gap:4px;justify-content:center">
+                      <div class="progress-bar" style="width:40px"><div class="progress-fill pf-green" style="width:75%"></div></div>
+                      <span style="font-size:10px">75%</span>
+                    </div>
+                  </td>
+                  <td style="text-align:center"><input type="text" placeholder="—" style="width:40px;text-align:center;padding:3px;font-size:12px;border-radius:4px;border:0.5px solid var(--border-strong);background:var(--bg-surface);color:var(--text-primary);font-family:var(--font)"></td>
+                  <td style="text-align:center"><span class="chip chip-regular">Regular</span></td>
+                </tr>
+                <tr>
+                  <td style="font-weight:500">García, María</td>
+                  <td style="color:var(--text-secondary);font-size:11px">mgarcia@mail.com</td>
+                  <td style="font-size:11px;color:var(--text-secondary)">Ing. Civil</td>
+                  <td style="text-align:center"><div class="att-cell att-p" style="margin:auto" onclick="toggleAsistencia(this)">P</div></td>
+                  <td style="text-align:center"><div class="att-cell att-p" style="margin:auto" onclick="toggleAsistencia(this)">P</div></td>
+                  <td style="text-align:center"><div class="att-cell att-p" style="margin:auto" onclick="toggleAsistencia(this)">P</div></td>
+                  <td style="text-align:center"><div class="att-cell att-p" style="margin:auto" onclick="toggleAsistencia(this)">P</div></td>
+                  <td style="text-align:center">
+                    <div style="display:flex;align-items:center;gap:4px;justify-content:center">
+                      <div class="progress-bar" style="width:40px"><div class="progress-fill pf-green" style="width:100%"></div></div>
+                      <span style="font-size:10px">100%</span>
+                    </div>
+                  </td>
+                  <td style="text-align:center"><input type="text" value="9" style="width:40px;text-align:center;padding:3px;font-size:12px;border-radius:4px;border:0.5px solid var(--border-strong);background:var(--bg-surface);color:var(--text-primary);font-family:var(--font)"></td>
+                  <td style="text-align:center"><span class="chip chip-aprobado">Aprobado</span></td>
+                </tr>
+                <tr>
+                  <td style="font-weight:500">López, Tomás</td>
+                  <td style="color:var(--text-secondary);font-size:11px">tlopez@mail.com</td>
+                  <td style="font-size:11px;color:var(--text-secondary)">Ing. Eléctrica</td>
+                  <td style="text-align:center"><div class="att-cell att-a" style="margin:auto" onclick="toggleAsistencia(this)">A</div></td>
+                  <td style="text-align:center"><div class="att-cell att-a" style="margin:auto" onclick="toggleAsistencia(this)">A</div></td>
+                  <td style="text-align:center"><div class="att-cell att-p" style="margin:auto" onclick="toggleAsistencia(this)">P</div></td>
+                  <td style="text-align:center"><div class="att-cell att-a" style="margin:auto" onclick="toggleAsistencia(this)">A</div></td>
+                  <td style="text-align:center">
+                    <div style="display:flex;align-items:center;gap:4px;justify-content:center">
+                      <div class="progress-bar" style="width:40px"><div class="progress-fill pf-red" style="width:25%"></div></div>
+                      <span style="font-size:10px;color:#ef4444">25%</span>
+                    </div>
+                  </td>
+                  <td style="text-align:center"><input type="text" placeholder="—" style="width:40px;text-align:center;padding:3px;font-size:12px;border-radius:4px;border:0.5px solid var(--border-strong);background:var(--bg-surface);color:var(--text-primary);font-family:var(--font)"></td>
+                  <td style="text-align:center"><span class="chip chip-pendiente" style="background:var(--red-fill);color:var(--red-text)">Libre</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div style="display:flex;justify-content:flex-end;margin-top:12px;gap:8px">
+            <button class="btn btn-primary"><i class="ti ti-device-floppy" aria-hidden="true"></i>Guardar cambios</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ESTADISTICAS -->
+    <div id="s-estadisticas" class="screen">
+      <div class="topbar">
+        <div class="topbar-title"><i class="ti ti-chart-bar" style="font-size:15px;margin-right:4px" aria-hidden="true"></i>Estadísticas y reportes</div>
+        <div class="topbar-right">
+          <button class="btn" onclick="toggleTheme()">
+            <i class="ti ti-moon"></i>
+            Tema
+          </button>
+          <select style="font-size:12px;padding:4px 8px;border-radius:var(--radius-input);border:0.5px solid var(--border-strong);background:var(--bg-surface);color:var(--text-primary);font-family:var(--font)">
+            <option>Todas las cohortes</option><option>Cohorte 2026</option><option>Cohorte 2025</option><option>Cohorte 2024</option>
+          </select>
+          <button class="btn"><i class="ti ti-download" aria-hidden="true"></i>Exportar</button>
+        </div>
+      </div>
+      <div class="content">
+        <div class="stat-grid">
+          <div class="stat-card">
+            <div class="label">Total histórico</div>
+            <div class="value">184</div>
+            <div class="sub">Inscriptos desde 2020</div>
+          </div>
+          <div class="stat-card">
+            <div class="label">Graduados</div>
+            <div class="value">67</div>
+            <div class="sub">36% del total</div>
+          </div>
+          <div class="stat-card">
+            <div class="label">En curso</div>
+            <div class="value">89</div>
+            <div class="sub">48% activos</div>
+          </div>
+          <div class="stat-card">
+            <div class="label">Desgranamiento</div>
+            <div class="value">28</div>
+            <div class="sub">15% abandonaron</div>
+          </div>
+        </div>
+
+        <div class="two-col">
+          <div class="card">
+            <div class="card-title"><i class="ti ti-users" aria-hidden="true"></i>Inscriptos por cohorte</div>
+            <div class="chart-bar-group">
+              <div class="chart-bar-item">
+                <div class="chart-bar-label">2026</div>
+                <div class="chart-bar-track"><div class="chart-bar-fill" style="width:94%;background:#378ADD"><span class="chart-bar-val">47</span></div></div>
+                <div class="chart-bar-num">47</div>
+              </div>
+              <div class="chart-bar-item">
+                <div class="chart-bar-label">2025</div>
+                <div class="chart-bar-track"><div class="chart-bar-fill" style="width:82%;background:#378ADD"><span class="chart-bar-val">41</span></div></div>
+                <div class="chart-bar-num">41</div>
+              </div>
+              <div class="chart-bar-item">
+                <div class="chart-bar-label">2024</div>
+                <div class="chart-bar-track"><div class="chart-bar-fill" style="width:76%;background:#378ADD"><span class="chart-bar-val">38</span></div></div>
+                <div class="chart-bar-num">38</div>
+              </div>
+              <div class="chart-bar-item">
+                <div class="chart-bar-label">2023</div>
+                <div class="chart-bar-track"><div class="chart-bar-fill" style="width:72%;background:#378ADD"><span class="chart-bar-val">36</span></div></div>
+                <div class="chart-bar-num">36</div>
+              </div>
+              <div class="chart-bar-item">
+                <div class="chart-bar-label">2022</div>
+                <div class="chart-bar-track"><div class="chart-bar-fill" style="width:44%;background:#378ADD"><span class="chart-bar-val">22</span></div></div>
+                <div class="chart-bar-num">22</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-title"><i class="ti ti-circle-check" aria-hidden="true"></i>Estado seminarios — cohorte 2026</div>
+            <div class="chart-bar-group">
+              <div class="chart-bar-item">
+                <div class="chart-bar-label">Aprobados</div>
+                <div class="chart-bar-track"><div class="chart-bar-fill" style="width:62%;background:#3B6D11"><span class="chart-bar-val">62%</span></div></div>
+              </div>
+              <div class="chart-bar-item">
+                <div class="chart-bar-label">En cursada</div>
+                <div class="chart-bar-track"><div class="chart-bar-fill" style="width:24%;background:#BA7517"><span class="chart-bar-val">24%</span></div></div>
+              </div>
+              <div class="chart-bar-item">
+                <div class="chart-bar-label">Pendientes</div>
+                <div class="chart-bar-track"><div class="chart-bar-fill" style="width:14%;background:#888780"><span class="chart-bar-val">14%</span></div></div>
+              </div>
+            </div>
+            <hr class="divider">
+            <div class="card-title" style="margin-bottom:10px"><i class="ti ti-file-text" aria-hidden="true"></i>Trabajos finales — global</div>
+            <div class="chart-bar-group">
+              <div class="chart-bar-item">
+                <div class="chart-bar-label">Aprobados</div>
+                <div class="chart-bar-track"><div class="chart-bar-fill" style="width:36%;background:#3B6D11"><span class="chart-bar-val">36%</span></div></div>
+              </div>
+              <div class="chart-bar-item">
+                <div class="chart-bar-label">En elaboración</div>
+                <div class="chart-bar-track"><div class="chart-bar-fill" style="width:31%;background:#BA7517"><span class="chart-bar-val">31%</span></div></div>
+              </div>
+              <div class="chart-bar-item">
+                <div class="chart-bar-label">Sin iniciar</div>
+                <div class="chart-bar-track"><div class="chart-bar-fill" style="width:33%;background:#888780"><span class="chart-bar-val">33%</span></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title"><i class="ti ti-chart-line" aria-hidden="true"></i>Desgranamiento y ralentización por cohorte</div>
+          <table>
+            <thead>
+              <tr>
+                <th>Cohorte</th>
+                <th>Inscriptos</th>
+                <th>Activos</th>
+                <th>Graduados</th>
+                <th>Desgranan.</th>
+                <th>En ralentiz.</th>
+                <th>Tasa graduación</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style="font-weight:500">2026</td>
+                <td>47</td>
+                <td>47</td>
+                <td>0</td>
+                <td>0</td>
+                <td>3</td>
+                <td>
+                  <div style="display:flex;align-items:center;gap:5px">
+                    <div class="progress-bar" style="width:60px"><div class="progress-fill pf-yellow" style="width:0%"></div></div>
+                    <span style="font-size:10px">—</span>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td style="font-weight:500">2025</td>
+                <td>41</td>
+                <td>38</td>
+                <td>2</td>
+                <td>1</td>
+                <td>5</td>
+                <td>
+                  <div style="display:flex;align-items:center;gap:5px">
+                    <div class="progress-bar" style="width:60px"><div class="progress-fill pf-yellow" style="width:5%"></div></div>
+                    <span style="font-size:10px">5%</span>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td style="font-weight:500">2024</td>
+                <td>38</td>
+                <td>22</td>
+                <td>14</td>
+                <td>2</td>
+                <td>4</td>
+                <td>
+                  <div style="display:flex;align-items:center;gap:5px">
+                    <div class="progress-bar" style="width:60px"><div class="progress-fill pf-green" style="width:37%"></div></div>
+                    <span style="font-size:10px">37%</span>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td style="font-weight:500">2022</td>
+                <td>22</td>
+                <td>1</td>
+                <td>18</td>
+                <td>3</td>
+                <td>0</td>
+                <td>
+                  <div style="display:flex;align-items:center;gap:5px">
+                    <div class="progress-bar" style="width:60px"><div class="progress-fill pf-green" style="width:82%"></div></div>
+                    <span style="font-size:10px">82%</span>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+  <script src="wireframe_posgrado.js"></script>
+
+</body>
+</html>
