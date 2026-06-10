@@ -1,0 +1,1024 @@
+/* ═══════════════════════════════════════════════════════════
+   SISTEMA DE POSGRADO · UTN FRLP
+   Wireframe interactivo — Desarrollo de Software 2026
+   ═══════════════════════════════════════════════════════════ */
+
+
+/* ─────────────────────────────────────────────────────────
+   1. VARIABLES DE DISEÑO (design tokens)
+   ──────────────────────────────────────────────────────── */
+
+:root {
+  /* Fondos */
+  --bg-page:        #F1F5F9;   /* fondo general de la app */
+  --bg-card:        #FFFFFF;   /* cards, topbar, sidebar */
+  --bg-surface:     #F8FAFC;   /* inputs, filas hover, stat-cards */
+
+  /* Sidebar (dark) */
+  --sidebar-bg:     #1E293B;
+  --sidebar-active: #334155;
+
+  /* Bordes */
+  --border:         #E2E8F0;   /* borde sutil (líneas divisoras) */
+  --border-strong:  #CBD5E1;   /* borde de inputs y componentes */
+
+  /* Color primario (azul UTN) */
+  --primary:        #2C5F8A;
+  --primary-hover:  #1E4A6E;
+  --primary-light:  #EBF2FA;   /* fondo de chips info */
+
+  /* Texto */
+  --text-primary:   #1E293B;
+  --text-secondary: #64748B;
+  --text-muted:     #94A3B8;
+  --text-on-dark:   #F8FAFC;   /* texto sobre fondos oscuros */
+
+  /* Estado — semáforo y chips */
+  --green-fill:     #DCFCE7;
+  --green-text:     #16A34A;
+  --green-border:   #86EFAC;
+  --yellow-fill:    #FEF3C7;
+  --yellow-text:    #D97706;
+  --yellow-border:  #FDE68A;
+  --red-fill:       #FEE2E2;
+  --red-text:       #DC2626;
+  --red-border:     #FCA5A5;
+
+  /* Tipografía */
+--font:           'Inter', system-ui, sans-serif;
+--fs-h1:          28px;
+--fs-h2:          22px;
+--fs-body:        16px;
+--fs-small:       14px;
+--fs-xs:          13px;
+--fs-2xs:         12px;
+
+  /* Layout */
+  --sidebar-w:      240px;
+  --topbar-h:       56px;
+
+  /* Radios */
+  --radius-card:    8px;    /* cards, modales */
+  --radius-input:   6px;    /* inputs, botones, chips */
+  --radius-pill:    999px;  /* badges, pills */
+
+  /* Sombra */
+  --shadow-card:    0 1px 3px rgba(0, 0, 0, 0.08),
+                    0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+
+/* ─────────────────────────────────────────────────────────
+   2. RESET
+   ──────────────────────────────────────────────────────── */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+
+/* ─────────────────────────────────────────────────────────
+   3. BASE
+   ──────────────────────────────────────────────────────── */
+
+body {
+  font-family: var(--font);
+  font-size: 20px;
+  background: var(--bg-page);
+  color: var(--text-primary);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+
+/* ─────────────────────────────────────────────────────────
+   4. LAYOUT PRINCIPAL
+   ──────────────────────────────────────────────────────── */
+
+.app {
+  display: flex;
+  height: 100vh;
+  min-height: 600px;
+  overflow: hidden;
+}
+
+.main {
+  flex: 1;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.content {
+  padding: 20px;
+  flex: 1;
+  overflow-y: auto;
+}
+
+
+/* ─────────────────────────────────────────────────────────
+   5. SIDEBAR
+   ──────────────────────────────────────────────────────── */
+
+.sidebar {
+  width: var(--sidebar-w);
+  flex-shrink: 0;
+  background: var(--sidebar-bg);
+  border-right: 1px solid #334155;
+  display: flex;
+  flex-direction: column;
+  padding: 12px 0;
+  overflow-y: auto;
+}
+
+.sidebar-logo {
+  padding: 12px 16px 16px;
+  border-bottom: 1px solid #334155;
+  margin-bottom: 8px;
+}
+
+.sidebar-logo .faculty {
+  font-size: var(--fs-2xs);
+  color: #94A3B8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.sidebar-logo .system {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-on-dark);
+}
+
+/* Grupos de navegación */
+.nav-section {
+  padding: 4px 8px;
+  margin-bottom: 2px;
+}
+
+.nav-label {
+  font-size: var(--fs-2xs);
+  color: #64748B;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 4px 8px;
+  margin-bottom: 2px;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 8px;
+  border-radius: var(--radius-input);
+  cursor: pointer;
+  color: #94A3B8;
+  font-size: 12.5px;
+  transition: background 0.1s, color 0.1s;
+  user-select: none;
+}
+
+.nav-item i {
+  font-size: 15px;
+  flex-shrink: 0;
+}
+
+.nav-item:hover {
+  background: var(--sidebar-active);
+  color: var(--text-on-dark);
+}
+
+.nav-item.active {
+  background: var(--sidebar-active);
+  color: var(--text-on-dark);
+  font-weight: 500;
+}
+
+/* Indicador inferior del sidebar */
+.sidebar-footer {
+  margin-top: auto;
+  padding: 12px 16px;
+  border-top: 1px solid #334155;
+}
+
+.sidebar-footer-text {
+  font-size: var(--fs-xs);
+  color: #64748B;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dot-green {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #22c55e;
+  flex-shrink: 0;
+}
+
+
+/* ─────────────────────────────────────────────────────────
+   6. TOPBAR
+   ──────────────────────────────────────────────────────── */
+
+.topbar {
+  background: var(--bg-card);
+  border-bottom: 0.5px solid var(--border);
+  padding: 0 20px;
+  height: var(--topbar-h);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  gap: 12px;
+}
+
+.topbar-title {
+  font-weight: 500;
+  font-size: var(--fs-body);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* Toggle de período de inscripción */
+.period-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: var(--radius-input);
+  border: 0.5px solid var(--border-strong);
+  font-size: 12px;
+}
+
+.toggle-sw {
+  width: 32px;
+  height: 18px;
+  background: #22c55e;
+  border-radius: var(--radius-pill);
+  position: relative;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.2s;
+}
+
+.toggle-sw::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 12px;
+  height: 12px;
+  background: white;
+  border-radius: 50%;
+  transition: right 0.2s;
+}
+
+/* Estado cerrado */
+.toggle-sw.closed {
+  background: #94A3B8;
+}
+
+.toggle-sw.closed::after {
+  right: auto;
+  left: 3px;
+}
+
+
+/* ─────────────────────────────────────────────────────────
+   7. SCREENS (navegación entre vistas)
+   ──────────────────────────────────────────────────────── */
+
+.screen {
+  display: none;
+}
+
+.screen.active {
+  display: block;
+}
+
+
+/* ─────────────────────────────────────────────────────────
+   8. CARDS
+   ──────────────────────────────────────────────────────── */
+
+.card {
+  background: var(--bg-card);
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius-card);
+  padding: 16px 20px;
+  margin-bottom: 16px;
+  box-shadow: var(--shadow-card);
+}
+
+.card-title {
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 14px;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+/* Grid de dos columnas para cards */
+.two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+/* Divisor interno */
+.divider {
+  border: none;
+  border-top: 0.5px solid var(--border);
+  margin: 16px 0;
+}
+
+
+/* ─────────────────────────────────────────────────────────
+   9. STAT CARDS (métricas resumen)
+   ──────────────────────────────────────────────────────── */
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.stat-card {
+  background: var(--bg-surface);
+  border-radius: var(--radius-input);
+  padding: 12px 16px;
+}
+
+.stat-card .label {
+  font-size: var(--fs-xs);
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+
+.stat-card .value {
+  font-size: 22px;
+  font-weight: 500;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+.stat-card .sub {
+  font-size: var(--fs-2xs);
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+
+/* ─────────────────────────────────────────────────────────
+   10. FORMULARIOS
+   ──────────────────────────────────────────────────────── */
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.form-grid-3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.form-group label {
+  font-size: var(--fs-xs);
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  background: var(--bg-surface);
+  border: 0.5px solid var(--border-strong);
+  border-radius: var(--radius-input);
+  padding: 6px 8px;
+  font-size: 12px;
+  color: var(--text-primary);
+  font-family: var(--font);
+  width: 100%;
+  transition: border-color 0.15s;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.form-group textarea {
+  resize: none;
+  height: 64px;
+  line-height: 1.5;
+}
+
+/* Input de búsqueda (usado en topbar del dashboard) */
+.search-input {
+  font-size: 12px;
+  padding: 5px 10px;
+  border-radius: var(--radius-input);
+  border: 0.5px solid var(--border-strong);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  font-family: var(--font);
+  width: 220px;
+}
+
+/* Select genérico de topbar */
+.topbar-select {
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: var(--radius-input);
+  border: 0.5px solid var(--border-strong);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  font-family: var(--font);
+}
+
+
+/* ─────────────────────────────────────────────────────────
+   11. UPLOAD BOX
+   ──────────────────────────────────────────────────────── */
+
+.upload-box {
+  border: 0.5px dashed var(--border-strong);
+  border-radius: var(--radius-input);
+  padding: 12px;
+  text-align: center;
+  cursor: pointer;
+  background: var(--bg-surface);
+  transition: border-color 0.15s;
+}
+
+.upload-box:hover {
+  border-color: var(--primary);
+}
+
+.upload-box i {
+  font-size: 20px;
+  color: var(--text-muted);
+  display: block;
+  margin-bottom: 4px;
+}
+
+.upload-box span {
+  font-size: var(--fs-xs);
+  color: var(--text-secondary);
+  display: block;
+}
+
+.upload-box small {
+  font-size: var(--fs-2xs);
+  color: var(--text-muted);
+  display: block;
+  margin-top: 2px;
+}
+
+/* Label del tipo de documento encima del upload-box */
+.upload-label {
+  font-size: var(--fs-xs);
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+
+.upload-label .optional {
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+
+/* ─────────────────────────────────────────────────────────
+   12. BOTONES
+   ──────────────────────────────────────────────────────── */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: var(--radius-input);
+  border: 0.5px solid var(--border-strong);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-size: 12px;
+  font-family: var(--font);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.1s;
+}
+
+.btn:hover {
+  background: var(--bg-surface);
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: #ffffff;
+  border-color: var(--primary);
+}
+
+.btn-primary:hover {
+  background: var(--primary-hover);
+  border-color: var(--primary-hover);
+}
+
+.btn-danger {
+  border-color: var(--red-border);
+  color: var(--red-text);
+}
+
+.btn-danger:hover {
+  background: var(--red-fill);
+}
+
+.btn-sm {
+  padding: 3px 10px;
+  font-size: var(--fs-xs);
+}
+
+/* Botón de ancho completo */
+.btn-block {
+  width: 100%;
+  justify-content: center;
+}
+
+
+/* ─────────────────────────────────────────────────────────
+   13. BADGES Y CHIPS
+   ──────────────────────────────────────────────────────── */
+
+/* Badge — usado en el topbar */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  font-size: var(--fs-2xs);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.badge-info    { background: var(--primary-light); color: var(--primary); }
+.badge-success { background: var(--green-fill);    color: var(--green-text); }
+.badge-warn    { background: var(--yellow-fill);   color: var(--yellow-text); }
+.badge-danger  { background: var(--red-fill);      color: var(--red-text); }
+
+/* Chip — usado dentro de tablas y legajos */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  font-size: var(--fs-2xs);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.chip-aprobado  { background: var(--green-fill);    color: var(--green-text); }
+.chip-cursando  { background: var(--primary-light); color: var(--primary); }
+.chip-regular   { background: var(--yellow-fill);   color: var(--yellow-text); }
+.chip-pendiente { background: var(--bg-surface);    color: var(--text-secondary); }
+.chip-libre     { background: var(--red-fill);      color: var(--red-text); }
+
+
+/* ─────────────────────────────────────────────────────────
+   14. TABLA
+   ──────────────────────────────────────────────────────── */
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+th {
+  text-align: left;
+  padding: 6px 10px;
+  font-size: var(--fs-2xs);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  color: var(--text-secondary);
+  border-bottom: 0.5px solid var(--border);
+  white-space: nowrap;
+}
+
+td {
+  padding: 8px 10px;
+  border-bottom: 0.5px solid var(--border);
+  color: var(--text-primary);
+  vertical-align: middle;
+}
+
+tr:last-child td {
+  border-bottom: none;
+}
+
+tr:hover td {
+  background: var(--bg-surface);
+}
+
+/* Input dentro de celda (nota editable en planilla) */
+.td-input {
+  width: 40px;
+  text-align: center;
+  padding: 3px;
+  font-size: 12px;
+  border-radius: 4px;
+  border: 0.5px solid var(--border-strong);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  font-family: var(--font);
+}
+
+/* Paginación de tabla */
+.table-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 0.5px solid var(--border);
+}
+
+.table-footer-info {
+  font-size: var(--fs-xs);
+  color: var(--text-secondary);
+}
+
+
+/* ─────────────────────────────────────────────────────────
+   15. SEMÁFORO (indicador de estado académico)
+   ──────────────────────────────────────────────────────── */
+
+/* Dot pequeño (en tablas) */
+.semaforo {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+/* Grande (en encabezado del legajo) */
+.semaforo-big {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+/* Colores */
+.s-verde    { background: #22c55e; }
+.s-amarillo { background: #f59e0b; }
+.s-rojo     { background: #ef4444; }
+
+/* Leyenda */
+.semaforo-legend {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  font-size: var(--fs-xs);
+  color: var(--text-secondary);
+}
+
+.semaforo-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+
+/* ─────────────────────────────────────────────────────────
+   16. BARRA DE PROGRESO
+   ──────────────────────────────────────────────────────── */
+
+.progress-bar {
+  height: 6px;
+  background: var(--bg-surface);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+  margin-top: 4px;
+  flex-shrink: 0;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: var(--radius-pill);
+  transition: width 0.3s;
+}
+
+.pf-green  { background: #22c55e; }
+.pf-yellow { background: #f59e0b; }
+.pf-red    { background: #ef4444; }
+
+
+/* ─────────────────────────────────────────────────────────
+   17. CELDAS DE ASISTENCIA (P / A)
+   ──────────────────────────────────────────────────────── */
+
+.att-cell {
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  font-weight: 500;
+  cursor: pointer;
+  border: 0.5px solid var(--border);
+  user-select: none;
+  transition: opacity 0.1s;
+}
+
+.att-cell:hover {
+  opacity: 0.8;
+}
+
+.att-p     { background: var(--green-fill);   color: var(--green-text); }
+.att-a     { background: var(--red-fill);     color: var(--red-text); }
+.att-blank { background: var(--bg-surface);   color: var(--text-muted); }
+
+
+/* ─────────────────────────────────────────────────────────
+   18. ALERTAS Y AVISOS
+   ──────────────────────────────────────────────────────── */
+
+.alert-box {
+  background: var(--yellow-fill);
+  border: 0.5px solid var(--yellow-border);
+  border-radius: var(--radius-input);
+  padding: 10px 14px;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.alert-box i {
+  font-size: 15px;
+  color: var(--yellow-text);
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.alert-box span {
+  font-size: var(--fs-xs);
+  color: var(--yellow-text);
+  line-height: 1.5;
+}
+
+.alert-box.danger {
+  background: var(--red-fill);
+  border-color: var(--red-border);
+}
+
+.alert-box.danger i,
+.alert-box.danger span {
+  color: var(--red-text);
+}
+
+
+/* ─────────────────────────────────────────────────────────
+   19. SECCIÓN DE BECA
+   ──────────────────────────────────────────────────────── */
+
+.beca-options {
+  display: flex;
+  gap: 8px;
+}
+
+.beca-opt {
+  flex: 1;
+  border: 0.5px solid var(--border-strong);
+  border-radius: var(--radius-input);
+  padding: 10px;
+  cursor: pointer;
+  text-align: center;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.beca-opt:hover {
+  border-color: var(--primary);
+}
+
+.beca-opt.selected {
+  border-color: var(--primary);
+  background: var(--primary-light);
+}
+
+.beca-opt .pct {
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--text-primary);
+  line-height: 1.3;
+}
+
+.beca-opt span {
+  font-size: var(--fs-2xs);
+  color: var(--text-secondary);
+  display: block;
+  margin-top: 2px;
+}
+
+
+/* ─────────────────────────────────────────────────────────
+   20. GRÁFICOS DE BARRAS HORIZONTALES
+   ──────────────────────────────────────────────────────── */
+
+.chart-bar-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.chart-bar-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.chart-bar-label {
+  font-size: var(--fs-xs);
+  color: var(--text-secondary);
+  width: 120px;
+  flex-shrink: 0;
+  text-align: right;
+}
+
+.chart-bar-track {
+  flex: 1;
+  height: 16px;
+  background: var(--bg-surface);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.chart-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 6px;
+  transition: width 0.4s;
+}
+
+.chart-bar-val {
+  font-size: var(--fs-2xs);
+  font-weight: 500;
+  color: white;
+}
+
+.chart-bar-num {
+  font-size: var(--fs-xs);
+  color: var(--text-secondary);
+  width: 28px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+
+/* ─────────────────────────────────────────────────────────
+   21. UTILIDADES
+   ──────────────────────────────────────────────────────── */
+
+/* Texto de ayuda de filas de tabla (nombre del docente, mail, etc.) */
+.text-muted  { color: var(--text-muted); }
+.text-sm     { font-size: var(--fs-small); }
+.text-xs     { font-size: var(--fs-xs); }
+.text-bold   { font-weight: 500; }
+.text-right  { text-align: right; }
+.text-center { text-align: center; }
+
+/* Flecha de vencimiento en semáforo amarillo */
+.text-warn { color: var(--yellow-text); }
+.text-danger { color: var(--red-text); }
+
+/* Fecha / campo secundario en tabla */
+.td-secondary {
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
+/* Fila de acciones al pie de formulario */
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 4px;
+  padding-bottom: 8px;
+}
+
+/* Contenedor de tutor, nota del docente, etc. */
+.note-card {
+  background: var(--bg-surface);
+  border-radius: var(--radius-input);
+  padding: 10px;
+  font-size: 12px;
+}
+
+.note-card .note-title {
+  font-weight: 500;
+  margin-bottom: 2px;
+}
+
+.note-card .note-body {
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+/*Tema Oscuro*/
+body.dark-theme {
+
+  --bg-page:        #0F172A;
+  --bg-card:        #1E293B;
+  --bg-surface:     #334155;
+
+  --sidebar-bg:     #020617;
+  --sidebar-active: #1E293B;
+
+  --border:         #475569;
+  --border-strong:  #64748B;
+
+  --primary:        #3B82F6;
+  --primary-hover:  #2563EB;
+  --primary-light:  #1E3A5F;
+
+  --text-primary:   #F8FAFC;
+  --text-secondary: #CBD5E1;
+  --text-muted:     #94A3B8;
+  --text-on-dark:   #F8FAFC;
+
+  --green-fill:     #14532D;
+  --green-text:     #86EFAC;
+  --green-border:   #22C55E;
+
+  --yellow-fill:    #78350F;
+  --yellow-text:    #FCD34D;
+  --yellow-border:  #F59E0B;
+
+  --red-fill:       #7F1D1D;
+  --red-text:       #FCA5A5;
+  --red-border:     #EF4444;
+
+  --shadow-card:    0 4px 10px rgba(0,0,0,.35);
+}
