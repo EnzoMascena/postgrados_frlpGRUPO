@@ -2,7 +2,9 @@ import { useState } from 'react'
 import { IconMoon, IconSun } from '@tabler/icons-react'
 
 export default function ThemeToggle() {
-  const [dark, setDark] = useState(false)
+  const [dark, setDark] = useState(() =>
+    document.documentElement.classList.contains('dark'),
+  )
 
   function toggle() {
     const next = !dark

@@ -5,6 +5,7 @@ import {
   IconUserCircle,
   IconChartBar,
   IconTable,
+  IconLogout,
 } from '@tabler/icons-react'
 import type { ElementType } from 'react'
 
@@ -33,16 +34,19 @@ const groups: NavGroup[] = [
 type Props = {
   active: Screen
   onNavigate: (screen: Screen) => void
+  onLogout: () => void
 }
 
-export default function Sidebar({ active, onNavigate }: Props) {
+export default function Sidebar({ active, onNavigate, onLogout }: Props) {
   return (
     <aside className="w-60 flex-shrink-0 bg-sidebar flex flex-col py-3 overflow-y-auto">
+      {/* Logo */}
       <div className="px-4 pb-4 mb-2 border-b border-white/10">
         <div className="text-[11px] uppercase tracking-wide text-faint">UTN · FRLP</div>
         <div className="text-[13px] font-medium text-on-dark">Sistema Posgrado</div>
       </div>
 
+      {/* Grupos de navegación */}
       {groups.map((group) => (
         <div key={group.label} className="px-2 mb-0.5">
           <div className="text-[11px] uppercase tracking-wide text-faint px-2 py-1">
@@ -71,8 +75,16 @@ export default function Sidebar({ active, onNavigate }: Props) {
         </div>
       ))}
 
-      <div className="mt-auto px-4 pt-3 border-t border-white/10">
-        <div className="flex items-center gap-1.5 text-[11px] text-faint">
+      {/* Footer: cerrar sesión + estado del período */}
+      <div className="mt-auto px-2 pt-2 border-t border-white/10">
+        <button
+          onClick={onLogout}
+          className="w-full flex items-center gap-2 px-2 py-[7px] rounded-input text-[12.5px] text-faint hover:bg-sidebar-active hover:text-on-dark transition-colors"
+        >
+          <IconLogout size={15} stroke={1.5} className="flex-shrink-0" />
+          Cerrar sesión
+        </button>
+        <div className="flex items-center gap-1.5 text-[11px] text-faint px-2 pt-2 mt-1 border-t border-white/10">
           <span className="w-2 h-2 rounded-full bg-[#22c55e] flex-shrink-0" />
           Período abierto
         </div>
