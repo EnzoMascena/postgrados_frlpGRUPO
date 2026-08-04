@@ -2,6 +2,7 @@ import { useState } from 'react'
 import Sidebar from './shared/layout/Sidebar'
 import FormularioInscripcion from './inscripcion/pages/FormularioInscripcion'
 import Login from './auth/pages/Login'
+import PlanillaDocente from './planilla-docente/pages/PlanillaDocente'
 
 export type Screen =
   | 'inscripcion'
@@ -30,7 +31,7 @@ export default function App() {
         {screen === 'dashboard' && <Placeholder title="Dashboard · Conducción" />}
         {screen === 'legajo' && <Placeholder title="Legajo del estudiante" />}
         {screen === 'estadisticas' && <Placeholder title="Estadísticas" />}
-        {screen === 'planilla' && <Placeholder title="Planilla docente" />}
+        {screen === 'planilla' && <PlanillaDocente />}
       </main>
     </div>
   )
