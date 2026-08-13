@@ -3,6 +3,8 @@ import Sidebar from './shared/layout/Sidebar'
 import FormularioInscripcion from './inscripcion/pages/FormularioInscripcion'
 import Login from './auth/pages/Login'
 import PlanillaDocente from './planilla-docente/pages/PlanillaDocente'
+import Estadisticas from './estadisticas/pages/Estadisticas'
+
 
 export type Screen =
   | 'inscripcion'
@@ -30,7 +32,7 @@ export default function App() {
         {screen === 'inscripcion' && <FormularioInscripcion />}
         {screen === 'dashboard' && <Placeholder title="Dashboard · Conducción" />}
         {screen === 'legajo' && <Placeholder title="Legajo del estudiante" />}
-        {screen === 'estadisticas' && <Placeholder title="Estadísticas" />}
+        {screen === 'estadisticas' && <Estadisticas />}
         {screen === 'planilla' && <PlanillaDocente />}
       </main>
     </div>
