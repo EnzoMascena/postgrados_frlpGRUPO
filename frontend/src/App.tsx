@@ -4,6 +4,7 @@ import FormularioInscripcion from './inscripcion/pages/FormularioInscripcion'
 import Login from './auth/pages/Login'
 import PlanillaDocente from './planilla-docente/pages/PlanillaDocente'
 import Estadisticas from './estadisticas/pages/Estadisticas'
+import Dashboard from './dashboard/pages/Dashboard'
 
 
 export type Screen =
@@ -30,7 +31,7 @@ export default function App() {
 
       <main className="flex-1 overflow-auto min-w-0">
         {screen === 'inscripcion' && <FormularioInscripcion />}
-        {screen === 'dashboard' && <Placeholder title="Dashboard · Conducción" />}
+        {screen === 'dashboard' && <Dashboard/>}
         {screen === 'legajo' && <Placeholder title="Legajo del estudiante" />}
         {screen === 'estadisticas' && <Estadisticas />}
         {screen === 'planilla' && <PlanillaDocente />}
