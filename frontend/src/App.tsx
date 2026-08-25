@@ -5,6 +5,7 @@ import Login from './auth/pages/Login'
 import PlanillaDocente from './planilla-docente/pages/PlanillaDocente'
 import Estadisticas from './estadisticas/pages/Estadisticas'
 import Dashboard from './dashboard/pages/Dashboard'
+import Legajo from './legajo/pages/Legajo'
 
 
 export type Screen =
@@ -32,21 +33,10 @@ export default function App() {
       <main className="flex-1 overflow-auto min-w-0">
         {screen === 'inscripcion' && <FormularioInscripcion />}
         {screen === 'dashboard' && <Dashboard/>}
-        {screen === 'legajo' && <Placeholder title="Legajo del estudiante" />}
+        {screen === 'legajo' && <Legajo />}
         {screen === 'estadisticas' && <Estadisticas />}
         {screen === 'planilla' && <PlanillaDocente />}
       </main>
-    </div>
-  )
-}
-
-function Placeholder({ title }: { title: string }) {
-  return (
-    <div className="p-8">
-      <h1 className="text-xl font-semibold text-ink">{title}</h1>
-      <p className="mt-2 text-sm text-muted">
-        Pantalla en construcción — la portamos en el próximo paso.
-      </p>
     </div>
   )
 }
