@@ -1,3 +1,15 @@
+/* ═══════════════════════════════════════════════════════════════
+   Badge.tsx — ETIQUETA DE ESTADO (las píldoras de colores)
+   ───────────────────────────────────────────────────────────────
+   PARA EXPONER:
+   Son las etiquetas redondeadas que muestran estados: "Completo",
+   "Incompleto", "Aprobado", "Libre", "Período abierto".
+
+   El color transmite el significado y es el MISMO en todo el
+   sistema, así el usuario aprende el código de una sola vez:
+     info (azul) · success (verde) · warn (amarillo) · danger (rojo)
+   ═══════════════════════════════════════════════════════════════ */
+
 import type { ReactNode } from 'react'
 
 type Variant = 'info' | 'success' | 'warn' | 'danger'

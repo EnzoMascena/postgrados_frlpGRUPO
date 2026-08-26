@@ -1,3 +1,16 @@
+/* ═══════════════════════════════════════════════════════════════
+   Field.tsx — ETIQUETA + CAMPO DE FORMULARIO
+   ───────────────────────────────────────────────────────────────
+   PARA EXPONER:
+   Envuelve cualquier campo (input, select, textarea) y le pone
+   arriba su etiqueta, con el asterisco rojo si es obligatorio.
+
+   Gracias a este componente, el formulario de inscripción, que
+   tiene más de 20 campos, se escribe sin repetir el mismo bloque
+   de HTML una y otra vez, y todos los campos quedan alineados
+   exactamente igual.
+   ═══════════════════════════════════════════════════════════════ */
+
 import type { ReactNode } from 'react'
 
 type Props = {

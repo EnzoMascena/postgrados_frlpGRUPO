@@ -1,3 +1,13 @@
+/* ═══════════════════════════════════════════════════════════════
+   BarraAsistencia.tsx — BARRITA DE % EN LA PLANILLA
+   ───────────────────────────────────────────────────────────────
+   Muestra el porcentaje de asistencia con una barra de color.
+   El color se DEDUCE del número (verde ≥75%, amarillo ≥50%, rojo
+   abajo de eso): no hay que guardarlo ni actualizarlo aparte.
+   El ancho se logra con un style width en porcentaje, sin
+   librería de gráficos.
+   ═══════════════════════════════════════════════════════════════ */
+
 type Props = {
   porcentaje: number
 }

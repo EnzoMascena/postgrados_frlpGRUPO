@@ -1,3 +1,37 @@
+/* ═══════════════════════════════════════════════════════════════
+   PlanillaDocente.tsx — PANTALLA DEL DOCENTE
+   ───────────────────────────────────────────────────────────────
+   PARA EXPONER:
+   Reemplaza la planilla de Excel/papel donde el docente toma
+   asistencia y carga las notas de un seminario. Es la pantalla
+   MÁS INTERACTIVA del prototipo: conviene demostrarla en vivo.
+
+   DEMO SUGERIDA (hacerlo mientras se explica):
+     Hacer click en una celda de asistencia → cambia de vacío a
+     "P" (presente), otro click a "A" (ausente), otro vuelve a
+     vacío. En el mismo momento se actualizan solos el porcentaje
+     de asistencia y el estado del alumno (Libre / Regular /
+     Aprobado). Nadie lo recalcula a mano: lo hace el sistema.
+
+   LAS REGLAS DE NEGOCIO QUE PROGRAMAMOS:
+     · Si no llega a la asistencia mínima (75%) → LIBRE, sin
+       importar la nota que tenga.
+     · Si llega a la asistencia y tiene 6 o más → APROBADO.
+     · Si llega a la asistencia pero no tiene nota → REGULAR.
+   Están en la función calcularEstado(), un solo lugar. Si el
+   reglamento cambia, se toca ahí y listo.
+
+   CÓMO FUNCIONA POR DENTRO:
+   Toda la grilla vive en UN estado (`estudiantes`). Cuando se
+   toca una celda no modificamos el dato original: creamos una
+   copia con el cambio (INMUTABILIDAD). React compara y vuelve a
+   dibujar solo lo que cambió. Es la forma correcta de trabajar
+   en React y evita errores muy difíciles de encontrar.
+
+   Arriba también hay un aviso de que el sistema manda recordatorio
+   automático por mail si el docente no carga a tiempo.
+   ═══════════════════════════════════════════════════════════════ */
+
 import { useState } from 'react'
 import {
   IconTable,
@@ -29,6 +63,7 @@ import {
    cada vez que cambia una celda.
    ─────────────────────────────────────────────────────────── */
 
+/** Cuenta cuántas "P" hay sobre el total de clases y lo pasa a %. */
 function calcularPorcentaje(asistencias: Asistencia[]): number {
   const total = asistencias.length
   if (total === 0) return 0
@@ -41,6 +76,9 @@ type EstadoInfo = {
   variant: 'info' | 'success' | 'warn' | 'danger'
 }
 
+/** LAS REGLAS DEL REGLAMENTO, en un solo lugar.
+    Se lee de arriba hacia abajo: la primera condición que se cumple
+    define el estado del estudiante. */
 function calcularEstado(porcentaje: number, nota: string): EstadoInfo {
   // Sin la asistencia mínima, queda libre sin importar la nota.
   if (porcentaje < seminarioMock.asistenciaMinima) {
@@ -100,7 +138,8 @@ export default function PlanillaDocente() {
       </Topbar>
 
       <div className="p-5">
-        {/* Aviso de vencimiento */}
+        {/* Recordatorio de la fecha límite de carga. En el sistema
+            final esto además dispara un mail automático al docente. */}
         <div className="flex items-start gap-2 p-3 mb-4 rounded-card border border-warn-border bg-warn-bg text-[12.5px] text-warn">
           <IconMail size={15} stroke={1.5} className="flex-shrink-0 mt-0.5" />
           <span>
@@ -141,7 +180,8 @@ export default function PlanillaDocente() {
           </Card>
         </div>
 
-        {/* Grilla de asistencia */}
+        {/* LA GRILLA: filas = estudiantes, columnas = fechas de
+            cursada. Es el corazón de esta pantalla. */}
         <Card title="Registro de asistencia y calificaciones" icon={IconUsers}>
           <div className="overflow-x-auto">
             <table className="w-full min-w-[680px] text-[12px] border-collapse">
@@ -150,6 +190,9 @@ export default function PlanillaDocente() {
                   <th className={th + ' min-w-[140px]'}>Estudiante</th>
                   <th className={th}>Email</th>
                   <th className={th}>Carrera grado</th>
+                  {/* Las columnas de fechas se generan desde los datos:
+                      si el docente agrega una fecha nueva, aparece una
+                      columna nueva sin tocar el código. */}
                   {fechasGrilla.map((f) => (
                     <th key={f} className={thCenter}>
                       {f}
@@ -179,6 +222,8 @@ export default function PlanillaDocente() {
                         {e.carreraGrado}
                       </td>
 
+                      {/* Una celda clickeable por fecha. Le pasamos el
+                          valor actual y qué hacer cuando cambie. */}
                       {e.asistencias.map((valor, indice) => (
                         <td key={indice} className={td + ' text-center'}>
                           <CeldaAsistencia

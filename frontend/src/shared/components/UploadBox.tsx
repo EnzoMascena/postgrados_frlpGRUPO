@@ -1,3 +1,17 @@
+/* ═══════════════════════════════════════════════════════════════
+   UploadBox.tsx — CAJA PARA SUBIR UN PDF
+   ───────────────────────────────────────────────────────────────
+   PARA EXPONER:
+   El recuadro punteado del formulario de inscripción, uno por
+   cada documento que pide el reglamento. Acepta solo PDF
+   (accept="application/pdf") y avisa el límite de tamaño.
+
+   TRUCO DE MAQUETACIÓN: el <input type="file"> real está oculto
+   y todo el recuadro es un <label>. Al hacer click en cualquier
+   parte del recuadro se abre el explorador de archivos. Se hace
+   así porque el input de archivos nativo no se puede estilar.
+   ═══════════════════════════════════════════════════════════════ */
+
 import { IconUpload } from '@tabler/icons-react'
 
 type Props = {

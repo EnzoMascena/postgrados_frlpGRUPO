@@ -1,3 +1,16 @@
+/* ═══════════════════════════════════════════════════════════════
+   ListaTutorias.tsx — HISTORIAL DE TUTORÍAS (usado en Legajo)
+   ───────────────────────────────────────────────────────────────
+   PARA EXPONER:
+   Lista las reuniones del estudiante con su director/a de TFI:
+   fecha, tema y un detalle. Hoy ese seguimiento se lleva por mail
+   o en papel y se pierde; acá queda registrado en el legajo.
+
+   Recibe las tutorías por props (no las busca ella misma) y las
+   recorre con .map() para dibujar una tarjetita por cada una.
+   Si no hay ninguna, muestra un mensaje en vez de un hueco vacío.
+   ═══════════════════════════════════════════════════════════════ */
+
 import { IconPlus } from '@tabler/icons-react'
 import Button from '../../shared/components/Button'
 import type { Tutoria } from '../types'

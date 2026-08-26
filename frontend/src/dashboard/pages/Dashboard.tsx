@@ -1,3 +1,37 @@
+/* ═══════════════════════════════════════════════════════════════
+   Dashboard.tsx — PANTALLA DE CONDUCCIÓN (Secretaría de Posgrado)
+   ───────────────────────────────────────────────────────────────
+   PARA EXPONER:
+   Es el panel de control de quien gestiona la carrera. De un
+   vistazo responde: ¿cuántos se inscribieron?, ¿quiénes tienen
+   el legajo completo?, ¿cuántos pidieron beca?
+
+   QUÉ SE VE EN PANTALLA:
+     · Arriba: selector de COHORTE (año de ingreso) y el
+       interruptor para abrir/cerrar el período de inscripción.
+     · 4 tarjetas de indicadores (total, completos, incompletos,
+       con beca).
+     · Una tabla con todos los inscriptos, con buscador por
+       nombre o DNI y botón de exportar.
+
+   LA IDEA TÉCNICA MÁS IMPORTANTE — DATOS DERIVADOS:
+   Los números de las tarjetas NO están escritos a mano ni
+   guardados en ningún lado: se CALCULAN a partir de la lista de
+   inscriptos cada vez que se dibuja la pantalla. Por eso nunca
+   pueden contradecirse entre sí. Si mañana esa lista viene del
+   backend en vez del mock, las tarjetas siguen funcionando igual.
+
+   MÉTODOS DE JAVASCRIPT QUE USAMOS (por si preguntan):
+     .filter() → se queda solo con los elementos que cumplen algo
+     .length   → cuántos quedaron
+     .map()    → transforma cada elemento (acá: cada inscripto en
+                 una fila <tr> de la tabla)
+
+   DATOS: hoy salen de data/dashboardMock.ts (datos de prueba).
+   Los tipos están en type.ts y ya describen cómo va a responder
+   la API del backend.
+   ═══════════════════════════════════════════════════════════════ */
+
 import { useState } from 'react'
 import {
   IconLayoutDashboard,
@@ -22,6 +56,8 @@ import { cohortesDisponibles, inscriptosMock } from '../data/dashboardMock'
    un dato del mock, las tarjetas y la tabla se actualizan solas.
    ─────────────────────────────────────────────────────────── */
 
+/** Qué porcentaje del legajo tiene presentado un inscripto.
+    Ej: 4 documentos de 6 requeridos → 67%. */
 function completitud(i: Inscripto): number {
   return Math.round((i.documentosPresentados / DOCUMENTOS_REQUERIDOS) * 100)
 }
@@ -31,6 +67,10 @@ function porcentaje(parte: number, total: number): number {
   return Math.round((parte / total) * 100)
 }
 
+/* Estos dos objetos traducen el dato interno a lo que se ve en
+   pantalla: el texto de la etiqueta y su color. Se hace con un
+   objeto en vez de una cadena de if/else porque queda más corto
+   y es más fácil agregar un caso nuevo. */
 const etiquetaBeca: Record<Beca, string> = {
   sin: 'Sin beca',
   '30': '30%',
@@ -44,6 +84,9 @@ const variantBeca: Record<Beca, 'info' | 'success' | 'warn' | 'danger'> = {
 }
 
 export default function Dashboard() {
+  // Los 3 estados de la pantalla: qué cohorte se está mirando,
+  // qué escribió el usuario en el buscador y si el período de
+  // inscripción está abierto o cerrado.
   const [cohorte, setCohorte] = useState('2026')
   const [busqueda, setBusqueda] = useState('')
   const [periodoAbierto, setPeriodoAbierto] = useState(true)
@@ -61,6 +104,7 @@ export default function Dashboard() {
       )
     : deLaCohorte
 
+  // 3) Los indicadores: todos salen de contar sobre la misma lista.
   const total = deLaCohorte.length
   const completos = deLaCohorte.filter((i) => completitud(i) === 100).length
   const incompletos = total - completos
@@ -68,6 +112,8 @@ export default function Dashboard() {
   const beca30 = deLaCohorte.filter((i) => i.beca === '30').length
   const beca100 = deLaCohorte.filter((i) => i.beca === '100').length
 
+  // Guardamos en variables las clases de estilo de la tabla para no
+  // repetir la misma lista de clases en cada celda.
   const th =
     'text-left font-medium text-muted py-2 px-2 border-b border-line whitespace-nowrap'
   const td = 'py-2 px-2 border-b border-line text-ink'
@@ -80,6 +126,8 @@ export default function Dashboard() {
           onChange={(e) => setCohorte(e.target.value)}
           className="px-2 py-1 rounded-input border border-line-strong bg-surface text-ink text-[12px] focus:outline-none focus:border-primary transition-colors"
         >
+          {/* Las opciones del desplegable se generan recorriendo la
+              lista de cohortes disponibles, no se escriben a mano. */}
           {cohortesDisponibles.map((c) => (
             <option key={c} value={c}>
               Cohorte {c}
@@ -94,7 +142,8 @@ export default function Dashboard() {
       </Topbar>
 
       <div className="p-5">
-        {/* Indicadores */}
+        {/* Indicadores: las 4 tarjetas de arriba. Reciben el número
+            ya calculado; StatCard solo se ocupa de mostrarlo. */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
           <StatCard label="Total inscriptos" valor={total} sub={`Cohorte ${cohorte}`} />
           <StatCard
@@ -157,6 +206,9 @@ export default function Dashboard() {
               </thead>
 
               <tbody>
+                {/* Una fila por inscripto visible. `key` es un
+                    identificador único que React necesita para saber
+                    qué fila cambió y no redibujar la tabla entera. */}
                 {visibles.map((i) => {
                   const pct = completitud(i)
                   const completo = pct === 100
@@ -188,6 +240,8 @@ export default function Dashboard() {
                   )
                 })}
 
+                {/* Mensaje para cuando la búsqueda no encuentra nada:
+                    una tabla vacía sin explicación confunde al usuario. */}
                 {visibles.length === 0 && (
                   <tr>
                     <td colSpan={7} className="py-6 text-center text-[12px] text-muted">

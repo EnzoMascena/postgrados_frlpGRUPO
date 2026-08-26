@@ -1,3 +1,37 @@
+/* ═══════════════════════════════════════════════════════════════
+   Legajo.tsx — LEGAJO ACADÉMICO DEL ESTUDIANTE
+   ───────────────────────────────────────────────────────────────
+   PARA EXPONER:
+   Es la ficha completa de UN estudiante: sus datos, cómo viene
+   con los seminarios, en qué estado está su Trabajo Final
+   Integrador (TFI) y las tutorías que tuvo. Es la pantalla que
+   usa Conducción para el seguimiento individual.
+
+   QUÉ SE VE, DE ARRIBA HACIA ABAJO:
+     1. Aviso amarillo de VENCIMIENTO (solo aparece si hay un
+        seminario por vencer). Este es el punto fuerte a mostrar:
+        el sistema avisa solo, hoy eso se controla a mano.
+     2. Datos del estudiante + SEMÁFORO de avance.
+     3. Tabla de seminarios (asistencia, condición, nota, acta,
+        vencimiento).
+     4. Trabajo Final Integrador (editable) + tutorías.
+
+   EL SEMÁFORO — LO MÁS DESTACABLE:
+   Verde "Al día" / Amarillo "En progreso" / Rojo "En riesgo".
+   El color NO se carga a mano: lo calcula la función
+   nivelAvance() mirando cuántos seminarios aprobó y si tiene un
+   vencimiento cerca. Es la regla del reglamento traducida a código.
+
+   OTRA VEZ, DATOS DERIVADOS:
+   Seminarios aprobados, asistencia promedio y el nivel del
+   semáforo se calculan desde la lista de seminarios. No están
+   guardados: si cambia un seminario, se reacomoda todo solo.
+
+   DIVISIÓN EN COMPONENTES: el semáforo y la lista de tutorías
+   están en archivos aparte (legajo/components/) para que esta
+   pantalla no quede gigante y para poder reutilizarlos.
+   ═══════════════════════════════════════════════════════════════ */
+
 import { useState } from 'react'
 import {
   IconUserCircle,
@@ -39,6 +73,8 @@ function seminariosDelPlan(lista: Seminario[]): Seminario[] {
   return lista.filter((s) => s.condicion !== 'en-elaboracion')
 }
 
+/** Promedio de asistencia, ignorando los seminarios que todavía no
+    tienen asistencia cargada (los que valen null). */
 function promedioAsistencia(lista: Seminario[]): number {
   const conAsistencia = lista.filter((s) => s.asistencia !== null)
   if (conAsistencia.length === 0) return 0
@@ -46,6 +82,10 @@ function promedioAsistencia(lista: Seminario[]): number {
   return Math.round(suma / conAsistencia.length)
 }
 
+/** LA REGLA DEL SEMÁFORO:
+    - Aprobó todo               → verde  (al día)
+    - Le falta pero está a tiempo→ amarillo (en progreso)
+    - Le falta y sin vencimiento próximo controlado → rojo (en riesgo) */
 function nivelAvance(
   aprobados: number,
   total: number,
@@ -75,6 +115,8 @@ const variantCondicion: Record<
 
 export default function Legajo() {
   // El formulario del TFI sí es editable, así que va en el estado.
+  // El único bloque editable de la pantalla es el TFI, así que es
+  // lo único que guardamos en estado. Lo demás solo se muestra.
   const [tfi, setTfi] = useState(trabajoFinalMock)
 
   const delPlan = seminariosDelPlan(seminariosMock)
@@ -82,6 +124,8 @@ export default function Legajo() {
   const totalPlan = delPlan.length
   const asistencia = promedioAsistencia(seminariosMock)
 
+  // .find() devuelve el primer seminario por vencer, o undefined si
+  // no hay ninguno. De eso depende que aparezca el aviso amarillo.
   const proximoAVencer = seminariosMock.find((s) => s.vencimientoProximo)
   const nivel = nivelAvance(aprobados, totalPlan, Boolean(proximoAVencer))
 
@@ -106,7 +150,9 @@ export default function Legajo() {
       </Topbar>
 
       <div className="p-5">
-        {/* Aviso de vencimiento próximo — solo si existe */}
+        {/* AVISO AUTOMÁTICO: solo se dibuja si proximoAVencer existe.
+            Mostrar esto en la exposición: es el alerta temprana que
+            hoy el sistema en papel no da. */}
         {proximoAVencer && (
           <div className="flex items-start gap-2 p-3 mb-4 rounded-card border border-warn-border bg-warn-bg text-[12.5px] text-warn">
             <IconAlertTriangle
@@ -147,6 +193,8 @@ export default function Legajo() {
           </Card>
 
           <Card title="Estado de avance" icon={IconTrafficCone}>
+            {/* Al componente del semáforo solo le pasamos el nivel ya
+                calculado y el texto de detalle. Él se ocupa del color. */}
             <SemaforoAvance nivel={nivel} detalle={detalleAvance} />
 
             <div className="h-px bg-line my-4" />
@@ -176,11 +224,15 @@ export default function Legajo() {
                 </tr>
               </thead>
               <tbody>
+                {/* Una fila por seminario del plan de estudios. */}
                 {seminariosMock.map((s) => (
                   <tr key={s.id}>
                     <td className={td}>{s.nombre}</td>
 
                     <td className={td}>
+                      {/* Si todavía no hay asistencia cargada mostramos
+                          un guion en vez de una barra en 0%, que daría a
+                          entender que el alumno no fue nunca. */}
                       {s.asistencia !== null ? (
                         <BarraProgreso porcentaje={s.asistencia} ancho={60} />
                       ) : (
@@ -223,6 +275,9 @@ export default function Legajo() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <Card title="Trabajo Final Integrador" icon={IconFileText}>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Campos controlados: el valor sale del estado (`value`)
+                  y cada tecla lo actualiza (`onChange`). Así React es
+                  siempre la única fuente de verdad del formulario. */}
               <Field label="Título del TFI" className="sm:col-span-2">
                 <input
                   className={controlClass}
@@ -267,6 +322,7 @@ export default function Legajo() {
           </Card>
 
           <Card title="Seguimiento de tutorías" icon={IconMessages}>
+            {/* Historial de reuniones con el director/a del TFI. */}
             <ListaTutorias tutorias={tutoriasMock} />
           </Card>
         </div>
