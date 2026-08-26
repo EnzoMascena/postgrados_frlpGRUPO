@@ -1,3 +1,21 @@
+/* ═══════════════════════════════════════════════════════════════
+   Button.tsx — BOTÓN ÚNICO DE TODA LA APLICACIÓN
+   ───────────────────────────────────────────────────────────────
+   PARA EXPONER:
+   Un solo botón con tres VARIANTES visuales:
+     · default → acciones secundarias (Exportar, Guardar borrador)
+     · primary → la acción principal (Enviar inscripción, Ingresar)
+     · danger  → acciones destructivas
+
+   Al usarlo se escribe <Button variant="primary">Enviar</Button>.
+   Los estilos de cada variante están en el objeto `styles`.
+
+   DETALLE TÉCNICO: el `...rest` de la firma reenvía al <button>
+   real cualquier atributo de HTML (onClick, disabled, type...).
+   Así nuestro componente se comporta igual que un botón común
+   pero con el estilo del sistema ya aplicado.
+   ═══════════════════════════════════════════════════════════════ */
+
 import type { ButtonHTMLAttributes, ReactNode } from 'react'
 
 type Variant = 'default' | 'primary' | 'danger'

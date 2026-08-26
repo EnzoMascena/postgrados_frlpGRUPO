@@ -1,3 +1,35 @@
+/* ═══════════════════════════════════════════════════════════════
+   Estadisticas.tsx — ESTADÍSTICAS Y REPORTES
+   ───────────────────────────────────────────────────────────────
+   PARA EXPONER:
+   Es la mirada histórica de la carrera, la que sirve para tomar
+   decisiones y para los informes de acreditación (CONEAU). Acá
+   Conducción ve la evolución de todas las cohortes juntas.
+
+   LOS CUATRO INDICADORES DE ARRIBA:
+     · Total histórico   → todos los inscriptos desde 2022
+     · Graduados         → cuántos terminaron (y qué % del total)
+     · En curso          → los que siguen activos
+     · Desgranamiento    → los que abandonaron. Este es EL dato
+       que preocupa en los posgrados y el que el sistema hoy no
+       permite medir fácil.
+
+   VOCABULARIO (por si el profesor pregunta):
+     · Cohorte        = grupo que ingresó el mismo año.
+     · Desgranamiento = estudiantes que abandonaron.
+     · Ralentización  = siguen, pero atrasados respecto del plan.
+     · Tasa de graduación = graduados / inscriptos.
+
+   EL FILTRO: el desplegable de arriba permite ver todas las
+   cohortes o una sola. Al cambiarlo se recalculan las tarjetas,
+   los gráficos Y la tabla, porque todos leen de la misma lista
+   filtrada. Un solo cambio, toda la pantalla coherente.
+
+   LOS GRÁFICOS: no usamos librería de charts. Están hechos con
+   <div> y ancho en porcentaje (componente BarraChart). Ventaja:
+   cero dependencias externas y se adapta solo al tema oscuro.
+   ═══════════════════════════════════════════════════════════════ */
+
 import { useState } from 'react'
 import {
   IconChartBar,
@@ -27,6 +59,8 @@ import {
    contradiciéndose entre sí.
    ─────────────────────────────────────────────────────────── */
  
+/** Suma una columna de todas las cohortes (por ejemplo, todos los
+    graduados). `reduce` va acumulando: arranca en 0 y suma de a uno. */
 function sumar(cohortes: CohorteStats[], campo: keyof CohorteStats): number {
   return cohortes.reduce((acum, c) => acum + c[campo], 0)
 }
@@ -37,6 +71,7 @@ function porcentaje(parte: number, total: number): number {
 }
  
 export default function Estadisticas() {
+  // Único estado: qué cohorte eligió el usuario en el desplegable.
   const [cohorteFiltro, setCohorteFiltro] = useState('Todas las cohortes')
  
   // El filtro del topbar recorta los datos; todo lo demás se recalcula.
@@ -51,6 +86,8 @@ export default function Estadisticas() {
   const totalDesgranados = sumar(cohortes, 'desgranados')
  
   // Gráfico de inscriptos: se arma desde las mismas cohortes.
+  // Adaptamos los datos de las cohortes al formato que espera el
+  // componente del gráfico: una etiqueta, un valor y un color.
   const barrasInscriptos: BarraDato[] = cohortes.map((c) => ({
     label: String(c.anio),
     valor: c.inscriptos,
@@ -103,7 +140,9 @@ export default function Estadisticas() {
           />
         </div>
  
-        {/* Dos columnas de gráficos */}
+        {/* Gráficos. El mismo componente BarraChart se reutiliza tres
+            veces con datos distintos: inscriptos por cohorte, estado de
+            los seminarios y avance de los trabajos finales. */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <Card title="Inscriptos por cohorte" icon={IconUsers}>
             <BarraChart datos={barrasInscriptos} />
@@ -141,6 +180,8 @@ export default function Estadisticas() {
                 </tr>
               </thead>
               <tbody>
+                {/* Tabla de detalle: una fila por cohorte, con la barra
+                    de tasa de graduación al final. */}
                 {cohortes.map((c) => {
                   // La tasa sale de los datos, no está escrita a mano.
                   const tasa = porcentaje(c.graduados, c.inscriptos)

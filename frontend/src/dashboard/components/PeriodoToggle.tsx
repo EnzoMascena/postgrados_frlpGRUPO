@@ -1,3 +1,16 @@
+/* ═══════════════════════════════════════════════════════════════
+   PeriodoToggle.tsx — INTERRUPTOR DE PERÍODO DE INSCRIPCIÓN
+   ───────────────────────────────────────────────────────────────
+   PARA EXPONER:
+   Permite a Conducción abrir o cerrar la inscripción con un
+   click. Hoy eso se avisa por mail o se saca la publicación del
+   sitio; acá es un estado del sistema.
+
+   Detalle de ACCESIBILIDAD que suma puntos: usamos role="switch"
+   y aria-checked para que un lector de pantalla lo anuncie como
+   un interruptor y diga si está encendido o apagado.
+   ═══════════════════════════════════════════════════════════════ */
+
 type Props = {
   abierto: boolean
   onToggle: () => void

@@ -1,8 +1,35 @@
+/* ═══════════════════════════════════════════════════════════════
+   Login.tsx — PANTALLA DE INICIO DE SESIÓN
+   ───────────────────────────────────────────────────────────────
+   PARA EXPONER:
+   Primera pantalla que ve el usuario. Es la puerta de entrada
+   al sistema y separa los tres perfiles del sistema (aspirante,
+   conducción y docentes).
+
+   IMPORTANTE ACLARARLE AL PROFESOR:
+   Todavía NO valida usuario ni contraseña. Es una maqueta
+   funcional: al apretar "Ingresar" avisamos al componente App
+   que el usuario entró, y App muestra el resto del sistema. La
+   autenticación real (usuario, contraseña, token) va en la
+   entrega donde conectemos el backend.
+
+   CÓMO SE COMUNICA CON App:
+   Recibe por props una función `onLogin`. El botón la ejecuta.
+   App es quien realmente cambia el estado. El hijo no decide,
+   solo avisa.
+
+   DISEÑO: tarjeta partida en dos paneles → izquierda la marca
+   institucional (UTN · FRLP), derecha el formulario.
+   ═══════════════════════════════════════════════════════════════ */
+
 import { IconSchool, IconEye } from '@tabler/icons-react'
 import Button from '../../shared/components/Button'
 import ThemeToggle from '../../shared/components/ThemeToggle'
 import { controlClass } from '../../shared/components/controls'
 
+// "Props" son los parámetros que un componente recibe de su padre.
+// Acá recibimos una función: la que hay que ejecutar cuando el
+// usuario logra ingresar.
 type Props = {
   onLogin: () => void
 }
@@ -74,12 +101,16 @@ export default function Login({ onLogin }: Props) {
             </a>
           </div>
 
+          {/* Botón principal: al hacer click ejecuta onLogin, o sea
+              le avisa a App que ya puede mostrar el sistema. */}
           <Button variant="primary" className="w-full" onClick={onLogin}>
             Ingresar
           </Button>
 
           <div className="h-px bg-line my-[18px]" />
 
+          {/* Atajo para el aspirante que todavía no tiene cuenta:
+              entra directo al formulario de preinscripción. */}
           <div className="text-[12.5px] text-muted text-center">
             ¿Sos aspirante?{' '}
             <a

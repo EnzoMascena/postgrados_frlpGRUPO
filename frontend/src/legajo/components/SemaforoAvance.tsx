@@ -1,3 +1,23 @@
+/* ═══════════════════════════════════════════════════════════════
+   SemaforoAvance.tsx — COMPONENTE DEL SEMÁFORO (usado en Legajo)
+   ───────────────────────────────────────────────────────────────
+   PARA EXPONER:
+   Muestra de un vistazo cómo viene el estudiante: verde al día,
+   amarillo en progreso, rojo en riesgo. Debajo aparece la
+   referencia con los tres estados posibles.
+
+   DETALLE TÉCNICO LINDO PARA CONTAR:
+   Este componente NO decide nada: recibe el nivel ya calculado
+   desde la pantalla Legajo y solo se ocupa de mostrarlo. Eso se
+   llama "componente de presentación", y permite reutilizarlo en
+   cualquier otra pantalla que necesite un semáforo.
+
+   El color y el texto salen del objeto `estilos` de acá abajo: en
+   vez de escribir if/else, buscamos el nivel como si fuera una
+   tabla. Agregar un cuarto estado sería sumar una línea ahí.
+   ═══════════════════════════════════════════════════════════════ */
+
+// Los tres estados posibles del semáforo.
 type Nivel = 'al-dia' | 'en-progreso' | 'en-riesgo'
 
 const estilos: Record<Nivel, { fondo: string; punto: string; label: string }> = {

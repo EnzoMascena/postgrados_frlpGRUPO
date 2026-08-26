@@ -1,3 +1,29 @@
+/* ═══════════════════════════════════════════════════════════════
+   Sidebar.tsx — MENÚ LATERAL (navegación de toda la app)
+   ───────────────────────────────────────────────────────────────
+   PARA EXPONER:
+   Es el menú fijo de la izquierda. Lo importante NO es que sea un
+   menú, sino cómo está organizado: las opciones están agrupadas
+   POR PERFIL DE USUARIO, que son los tres actores del sistema:
+
+     · ASPIRANTE  → Inscripción
+     · CONDUCCIÓN → Dashboard, Legajo, Estadísticas
+     · DOCENTES   → Planilla
+
+   Esa agrupación es la que definimos en el análisis de requisitos:
+   cada perfil ve las funciones que le corresponden. En la versión
+   final, según con qué usuario inicie sesión, se le van a mostrar
+   solo sus grupos.
+
+   TÉCNICAMENTE: el menú no está escrito a mano en el HTML. Está
+   definido como una lista de datos (la constante `groups` de acá
+   abajo) y se dibuja recorriéndola con .map(). Agregar una
+   pantalla nueva = agregar un renglón a esa lista.
+
+   Marca en negrita la opción activa comparando `active` con el id
+   de cada ítem, y al hacer click avisa a App con onNavigate.
+   ═══════════════════════════════════════════════════════════════ */
+
 import type { Screen } from '../../App'
 import {
   IconClipboardList,
@@ -12,6 +38,8 @@ import type { ElementType } from 'react'
 type NavItem = { id: Screen; label: string; icon: ElementType }
 type NavGroup = { label: string; items: NavItem[] }
 
+// El menú COMO DATO: los tres perfiles y sus pantallas.
+// Cambiar el menú es cambiar esta lista, no tocar el diseño.
 const groups: NavGroup[] = [
   {
     label: 'Aspirante',
@@ -75,7 +103,8 @@ export default function Sidebar({ active, onNavigate, onLogout }: Props) {
         </div>
       ))}
 
-      {/* Footer: cerrar sesión + estado del período */}
+      {/* Pie del menú: cerrar sesión y el indicador con el punto
+          verde que avisa si la inscripción está abierta. */}
       <div className="mt-auto px-2 pt-2 border-t border-white/10">
         <button
           onClick={onLogout}

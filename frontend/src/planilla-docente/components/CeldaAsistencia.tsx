@@ -1,3 +1,21 @@
+/* ═══════════════════════════════════════════════════════════════
+   CeldaAsistencia.tsx — LA CELDA CLICKEABLE DE LA PLANILLA
+   ───────────────────────────────────────────────────────────────
+   PARA EXPONER:
+   Cada cuadradito de la grilla del docente. Un click cicla entre
+   los tres valores: vacío → P (presente) → A (ausente) → vacío.
+   El color acompaña: gris, verde, rojo.
+
+   PUNTO INTERESANTE PARA MOSTRARLE AL PROFESOR:
+   El ciclo está definido como un DATO (el objeto `siguiente`), no
+   como una cadena de if. Se lee casi como una tabla: "si estoy en
+   vacío, el próximo es P". Agregar un estado nuevo (por ejemplo
+   "J" de justificado) sería agregar una línea, sin tocar lógica.
+
+   La celda tampoco guarda nada: le avisa al padre con onChange y
+   la planilla decide. Todo el estado vive en un solo lugar.
+   ═══════════════════════════════════════════════════════════════ */
+
 import type { Asistencia } from '../types'
 
 // El ciclo del wireframe: vacío → P → A → vacío.
