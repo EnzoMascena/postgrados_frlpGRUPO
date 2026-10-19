@@ -38,6 +38,17 @@ seguimiento académico, planilla docente y estadísticas.
 
 - Todas las rutas cuelgan de `/api/v1`, con JSON en camelCase.
 - Arquitectura en 3 capas por módulo: controller → service → repository.
+
+**Usuarios demo** (los crea `uv run python -m app.seed`):
+
+| Email | Contraseña | Rol |
+|-------|------------|-----|
+| `admin@fenix.test` | `Admin1234!` | Coordinador |
+| `cpr@fenix.test` | `Cpr1234!` | CPR |
+
+Para probar una ruta protegida: `POST /auth/login`, copiá el `accessToken` y
+pegalo en **Authorize**. El docente y el aspirante entran con los links que
+imprime el seed.
 """
 
 
