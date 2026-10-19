@@ -52,6 +52,8 @@ extend-immutable-calls = [
 
 [tool.ruff.lint.isort]
 known-first-party = ["app"]
+# La carpeta alembic/ (migraciones) no es el paquete: alembic es de terceros.
+known-third-party = ["alembic"]
 
 # ── Pytest (módulo 07) ─────────────────────────────────────────
 [tool.pytest.ini_options]
