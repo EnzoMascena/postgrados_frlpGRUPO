@@ -55,6 +55,10 @@ testpaths = ["tests"]
 pythonpath = ["."]
 # importlib: cada módulo tiene su propio test_reglas.py y los nombres no chocan.
 addopts = "--import-mode=importlib"
+filterwarnings = [
+    # Starlette 1.x sugiere httpx2 para el TestClient; el stack del equipo usa httpx.
+    "ignore:Using `httpx` with `starlette.testclient` is deprecated:starlette.exceptions.StarletteDeprecationWarning",
+]
 
 # ── Cobertura: `uv run pytest --cov` (DoD: 70 % o más) ────────
 [tool.coverage.run]
