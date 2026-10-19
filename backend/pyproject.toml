@@ -44,6 +44,10 @@ extend-immutable-calls = [
     "fastapi.File",
     "fastapi.Form",
     "fastapi.Header",
+    # Las guardas de core/dependencies.py: Depends(require_role(Rol.X)) en cada ruta.
+    "app.core.dependencies.require_role",
+    "app.core.dependencies.require_legajo_propio",
+    "app.core.dependencies.require_seminario_propio",
 ]
 
 [tool.ruff.lint.isort]

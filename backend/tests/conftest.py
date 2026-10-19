@@ -25,7 +25,7 @@ os.environ["ENVIRONMENT"] = "testing"
 os.environ["STORAGE_PATH"] = tempfile.mkdtemp(prefix="posgrado-test-storage-")
 
 from collections.abc import Iterator  # noqa: E402
-from datetime import date  # noqa: E402
+from datetime import UTC, date, datetime, timedelta  # noqa: E402
 
 import pytest  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
@@ -34,11 +34,22 @@ from sqlmodel import Session, SQLModel, text  # noqa: E402
 
 from app.core.config import STORAGE_PATH, TEST_DATABASE_URL  # noqa: E402
 from app.core.database import get_session  # noqa: E402
+from app.core.security import (  # noqa: E402
+    crear_token_aspirante,
+    crear_token_docente,
+    crear_token_usuario,
+    generar_token_opaco,
+    hash_password,
+    hash_token_opaco,
+)
 from app.main import app  # noqa: E402
 
 # Importar app.models registra las 13 tablas en SQLModel.metadata (create_all).
-from app.models import Carrera, Cohorte  # noqa: E402
-from app.models.enums import TipoCarrera  # noqa: E402
+from app.models import AccesoDocente, Carrera, Cohorte, Legajo, Seminario, Usuario  # noqa: E402
+from app.models.enums import Rol, RolUsuario, TipoCarrera  # noqa: E402
+
+# La contraseña de los usuarios de test.
+CLAVE_DE_TEST = "Clave1234!"
 
 
 def _crear_base_si_no_existe(url: str) -> None:
@@ -133,3 +144,105 @@ def carrera(session: Session) -> Carrera:
             tipo=TipoCarrera.ESPECIALIZACION,
         ),
     )
+
+
+@pytest.fixture
+def seminario(session: Session, cohorte: Cohorte, carrera: Carrera) -> Seminario:
+    """Un seminario de la cohorte 2026, con su docente."""
+    return _guardar(
+        session,
+        Seminario(
+            cohorte_id=cohorte.id,
+            carrera_id=carrera.id,
+            nombre="Gestión de Proyectos de Software",
+            docente_nombre="Ing. Rodríguez, Ana",
+            docente_email="a.rodriguez@frlp.utn.edu.ar",
+            fecha_limite_actas=date(2026, 11, 30),
+        ),
+    )
+
+
+# ── Un principal por rol, con su token ─────────────────────────────────────
+
+
+@pytest.fixture(scope="session")
+def hash_de_test() -> str:
+    """El hash de CLAVE_DE_TEST, calculado una sola vez (bcrypt es lento a propósito)."""
+    return hash_password(CLAVE_DE_TEST)
+
+
+@pytest.fixture
+def coordinador(session: Session, hash_de_test: str) -> Usuario:
+    return _guardar(
+        session,
+        Usuario(
+            email="coordinador@fenix.test",
+            nombre="María González",
+            password_hash=hash_de_test,
+            rol=RolUsuario.COORDINADOR,
+        ),
+    )
+
+
+@pytest.fixture
+def cpr(session: Session, hash_de_test: str) -> Usuario:
+    return _guardar(
+        session,
+        Usuario(
+            email="cpr-test@fenix.test",
+            nombre="Laura Martínez",
+            password_hash=hash_de_test,
+            rol=RolUsuario.CPR,
+        ),
+    )
+
+
+@pytest.fixture
+def legajo(session: Session, cohorte: Cohorte, carrera: Carrera) -> Legajo:
+    """El borrador de un aspirante: es el único legajo que puede tocar su token."""
+    return _guardar(
+        session,
+        Legajo(
+            cohorte_id=cohorte.id,
+            carrera_id=carrera.id,
+            dni="30456789",
+            email="ana.rodriguez@example.com",
+            apellido="Rodríguez",
+            nombre="Ana Laura",
+        ),
+    )
+
+
+@pytest.fixture
+def acceso_docente(session: Session, seminario: Seminario) -> AccesoDocente:
+    """Un link de docente vigente para `seminario`."""
+    return _guardar(
+        session,
+        AccesoDocente(
+            seminario_id=seminario.id,
+            token_hash=hash_token_opaco(generar_token_opaco()),
+            expira_en=datetime.now(UTC) + timedelta(days=30),
+            creado_por="coordinador@fenix.test",
+        ),
+    )
+
+
+@pytest.fixture
+def tokens(
+    coordinador: Usuario, cpr: Usuario, legajo: Legajo, acceso_docente: AccesoDocente
+) -> dict[Rol, str]:
+    """Un token válido por rol."""
+    return {
+        Rol.COORDINADOR: crear_token_usuario(coordinador.id, coordinador.rol),
+        Rol.CPR: crear_token_usuario(cpr.id, cpr.rol),
+        Rol.ASPIRANTE: crear_token_aspirante(legajo.id),
+        Rol.DOCENTE: crear_token_docente(
+            acceso_docente.id, acceso_docente.seminario_id, acceso_docente.expira_en
+        ),
+    }
+
+
+@pytest.fixture
+def headers_por_rol(tokens: dict[Rol, str]) -> dict[Rol, dict[str, str]]:
+    """El header Authorization listo para cada rol: client.get(url, headers=...)."""
+    return {rol: {"Authorization": f"Bearer {token}"} for rol, token in tokens.items()}
