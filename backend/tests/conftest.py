@@ -166,6 +166,12 @@ def seminario(session: Session, cohorte: Cohorte, carrera: Carrera) -> Seminario
 
 
 @pytest.fixture(scope="session")
+def clave_de_test() -> str:
+    """La contraseña de los usuarios de test (coordinador y cpr)."""
+    return CLAVE_DE_TEST
+
+
+@pytest.fixture(scope="session")
 def hash_de_test() -> str:
     """El hash de CLAVE_DE_TEST, calculado una sola vez (bcrypt es lento a propósito)."""
     return hash_password(CLAVE_DE_TEST)

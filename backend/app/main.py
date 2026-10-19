@@ -21,6 +21,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
+from app.auth import controller as auth_controller
 from app.core import health, scheduler
 from app.core.config import API_PREFIX
 from app.core.errores import registrar_handlers
@@ -69,4 +70,6 @@ registrar_handlers(app)
 # Sin CORS: el front llama a /api y el proxy de Vite lo reenvía (mismo origen).
 app.add_middleware(SecurityHeadersMiddleware)
 
+# Un router por módulo, todos bajo /api/v1.
 app.include_router(health.router, prefix=API_PREFIX)
+app.include_router(auth_controller.router, prefix=API_PREFIX)
