@@ -25,6 +25,7 @@ os.environ["ENVIRONMENT"] = "testing"
 os.environ["STORAGE_PATH"] = tempfile.mkdtemp(prefix="posgrado-test-storage-")
 
 from collections.abc import Iterator  # noqa: E402
+from datetime import date  # noqa: E402
 
 import pytest  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
@@ -34,6 +35,10 @@ from sqlmodel import Session, SQLModel, text  # noqa: E402
 from app.core.config import STORAGE_PATH, TEST_DATABASE_URL  # noqa: E402
 from app.core.database import get_session  # noqa: E402
 from app.main import app  # noqa: E402
+
+# Importar app.models registra las 13 tablas en SQLModel.metadata (create_all).
+from app.models import Carrera, Cohorte  # noqa: E402
+from app.models.enums import TipoCarrera  # noqa: E402
 
 
 def _crear_base_si_no_existe(url: str) -> None:
@@ -91,3 +96,40 @@ def client(session: Session) -> Iterator[TestClient]:
     with TestClient(app) as cliente:
         yield cliente
     app.dependency_overrides.clear()
+
+
+# ── Datos base: la oferta académica ────────────────────────────────────────
+
+
+def _guardar(session: Session, fila):
+    session.add(fila)
+    session.commit()
+    session.refresh(fila)
+    return fila
+
+
+@pytest.fixture
+def cohorte(session: Session) -> Cohorte:
+    """La cohorte 2026, con la inscripción abierta."""
+    return _guardar(
+        session,
+        Cohorte(
+            anio=2026,
+            nombre="Cohorte 2026",
+            inscripcion_abierta=True,
+            fecha_inicio=date(2026, 4, 1),
+        ),
+    )
+
+
+@pytest.fixture
+def carrera(session: Session) -> Carrera:
+    """Una especialización (730 días para el semáforo)."""
+    return _guardar(
+        session,
+        Carrera(
+            nombre="Especialización en Ingeniería en Sistemas",
+            nombre_corto="Esp. Ing. Sistemas",
+            tipo=TipoCarrera.ESPECIALIZACION,
+        ),
+    )
