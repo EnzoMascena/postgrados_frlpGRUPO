@@ -23,6 +23,7 @@ from fastapi import FastAPI
 from app.core import health
 from app.core.config import API_PREFIX
 from app.core.errores import registrar_handlers
+from app.core.middleware import SecurityHeadersMiddleware
 
 logging.basicConfig(
     level=logging.INFO,
@@ -48,5 +49,9 @@ app = FastAPI(
 
 # Todo error sale con el formato de ARQUITECTURA §11.2 y en español.
 registrar_handlers(app)
+
+# Headers de seguridad en todas las respuestas (NFR-S05, módulo 05).
+# Sin CORS: el front llama a /api y el proxy de Vite lo reenvía (mismo origen).
+app.add_middleware(SecurityHeadersMiddleware)
 
 app.include_router(health.router, prefix=API_PREFIX)
