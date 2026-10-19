@@ -17,10 +17,11 @@ Ejecutar en desarrollo (desde backend/):
 """
 
 import logging
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from app.core import health
+from app.core import health, scheduler
 from app.core.config import API_PREFIX
 from app.core.errores import registrar_handlers
 from app.core.middleware import SecurityHeadersMiddleware
@@ -38,6 +39,19 @@ seguimiento académico, planilla docente y estadísticas.
 - Arquitectura en 3 capas por módulo: controller → service → repository.
 """
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Al arrancar programa los jobs diarios (ARQUITECTURA §12); al apagar los frena.
+
+    El esquema NO se crea acá (como hacía la cátedra con create_all): lo
+    maneja Alembic, y start.sh corre la migración antes de levantar la API.
+    """
+    scheduler.iniciar()
+    yield
+    scheduler.detener()
+
+
 app = FastAPI(
     title="Sistema de Posgrado — API",
     description=DESCRIPTION,
@@ -45,6 +59,7 @@ app = FastAPI(
     docs_url="/api/docs",
     redoc_url=None,
     openapi_url="/api/openapi.json",
+    lifespan=lifespan,
 )
 
 # Todo error sale con el formato de ARQUITECTURA §11.2 y en español.
