@@ -22,6 +22,7 @@ from fastapi import FastAPI
 
 from app.core import health
 from app.core.config import API_PREFIX
+from app.core.errores import registrar_handlers
 
 logging.basicConfig(
     level=logging.INFO,
@@ -44,5 +45,8 @@ app = FastAPI(
     redoc_url=None,
     openapi_url="/api/openapi.json",
 )
+
+# Todo error sale con el formato de ARQUITECTURA §11.2 y en español.
+registrar_handlers(app)
 
 app.include_router(health.router, prefix=API_PREFIX)
