@@ -1,0 +1,31 @@
+# ─────────────────────────────────────────────────────────────
+# .gitignore de la raíz — Sistema de Posgrado
+# Lo que NUNCA va a Git: secretos, entornos virtuales,
+# dependencias, builds, cachés y los PDFs de los aspirantes.
+# ─────────────────────────────────────────────────────────────
+
+# Secretos: el .env tiene contraseñas y la SECRET_KEY (NFR-M04).
+# La plantilla .env.example sí se versiona: no tiene secretos.
+.env
+.env.*
+!.env.example
+
+# Python (uv)
+.venv/
+__pycache__/
+*.py[cod]
+
+# Cachés y reportes de las herramientas de calidad
+.pytest_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# Node / Vite
+node_modules/
+dist/
+
+# PDFs subidos por los aspirantes (ASR-001): viven fuera del repo
+# y de cualquier carpeta pública. En local van a backend/.storage/.
+backend/.storage/
