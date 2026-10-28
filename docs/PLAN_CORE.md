@@ -57,7 +57,7 @@ Enzo, Fran y Luca se reparten el back en partes iguales: seis PRs de código cad
 
 Enzo, Fran y Luca tienen PRs abiertos casi todos los días, seis de código cada uno; Enzo además abre y cierra la entrega. Cada PR tiene su rama, el día que se abre, el día que se mergea y quién lo revisa.
 
-Se lee por carril: Enzo, Fran y Luca no dejan días libres del jueves 29 al sábado 7, Enzo además abre y cierra la entrega, y cada pantalla de Loli y Gero se mergea el mismo día que el endpoint que usa o después, nunca antes.
+Enzo, Fran y Luca no dejan días libres del jueves 29 al sábado 7, Enzo además abre y cierra la entrega, y cada pantalla de Loli y Gero se mergea el mismo día que el endpoint que usa o después, nunca antes.
 
 | PR | Rama | Qué incluye | Abre | Merge | Revisa |
 | --- | --- | --- | --- | --- | --- |
@@ -242,7 +242,7 @@ Las columnas de semáforo que trae ARQUITECTURA §8.1 quedan para el módulo esp
 
 El legajo nace en BORRADOR cuando el aspirante guarda el formulario. Desde ahí, cada cambio pasa por `ServicioEstados.cambiar(...)`, que valida la transición con la tabla, aplica los efectos, guarda una fila de auditoría y manda el email que corresponda.
 
-Las dos flechas en color son las únicas acciones del aspirante. Las demás las dispara el coordinador desde el detalle del legajo, salvo las punteadas: VENCER corre en la tarea diaria (o con el comando manual) y GRADUAR no se usa en el Core.
+Las únicas acciones del aspirante son ENVIAR y CORREGIR. Las demás las dispara el coordinador desde el detalle del legajo, salvo VENCER, que corre en la tarea diaria (o con el comando manual), y GRADUAR, que no se usa en el Core.
 
 | Acción | De → a | Quién | Efectos | Email |
 | --- | --- | --- | --- | --- |
