@@ -15,6 +15,11 @@ Este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 - Estructura inicial del repositorio
 - Documentación base: SRS, PRD, BFD, Arquitectura, Cronograma
 - Plan del Módulo Core con alcance, reparto, contrato de la API y modelo de datos
+- Esqueleto del backend en FastAPI con Clean Architecture: configuración por variables de entorno, errores uniformes, headers de seguridad y health check
+- Entorno de desarrollo con PostgreSQL 16 y MailHog en `docker-compose.yml`, y tests de integración con rollback por test
+
+### Changed
+- `docker-compose.yml` y `.env.example` reemplazan las plantillas viejas de Node
 
 ---
 
