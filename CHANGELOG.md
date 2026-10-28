@@ -14,6 +14,7 @@ Este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 ### Added
 - Estructura inicial del repositorio
 - Documentación base: SRS, PRD, BFD, Arquitectura, Cronograma
+- Plan del Módulo Core con alcance, reparto, contrato de la API y modelo de datos
 
 ---
 
