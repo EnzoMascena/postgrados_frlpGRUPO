@@ -1,111 +1,34 @@
-# docker-compose.yml — Ambiente de desarrollo Fenix Posgrado
-# Ejecutar: docker-compose up -d
-# Detener:  docker-compose down
-# Ver logs: docker-compose logs -f [servicio]
-
-version: '3.9'
+# Entorno de desarrollo del Sistema de Posgrado UTN FRLP.
+#
+# Por ahora solo la base y MailHog: sirven para correr el back y los tests en tu máquina.
+#   docker compose up -d db mailhog
+#   docker compose down        # baja todo, conserva la base
+#   docker compose down -v     # baja todo y borra la base (para empezar de cero)
+#
+# Fran suma los servicios `backend` y `frontend` en F1 (US-TECH-001).
 
 services:
-  # ──────────────────────────────────────────
-  # BASE DE DATOS PostgreSQL
-  # ──────────────────────────────────────────
   db:
-    image: postgres:15-alpine
-    container_name: postgrado-db
-    restart: unless-stopped
+    image: postgres:16-alpine
     environment:
       POSTGRES_USER: ${DB_USER:-postgrado_user}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-postgrado_dev_password}
       POSTGRES_DB: ${DB_NAME:-postgrado_dev}
     ports:
-      - "5432:5432"
+      - "${DB_PORT:-5432}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
-      - ./src/core/database/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgrado_user} -d ${DB_NAME:-postgrado_dev}"]
-      interval: 10s
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 10
 
-  # ──────────────────────────────────────────
-  # BACKEND API
-  # ──────────────────────────────────────────
-  backend:
-    build:
-      context: ./src/core
-      dockerfile: Dockerfile.dev
-    container_name: postgrado-backend
-    restart: unless-stopped
-    depends_on:
-      db:
-        condition: service_healthy
-    environment:
-      DATABASE_URL: postgresql://${DB_USER:-postgrado_user}:${DB_PASSWORD:-postgrado_dev_password}@db:5432/${DB_NAME:-postgrado_dev}
-      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-in-production}
-      STORAGE_PATH: /var/postgrado-storage
-      SMTP_HOST: ${SMTP_HOST:-mailhog}
-      SMTP_PORT: ${SMTP_PORT:-1025}
-      NODE_ENV: development
-    ports:
-      - "8000:8000"
-    volumes:
-      - ./src:/app/src
-      - postgrado-storage:/var/postgrado-storage
-      - /app/node_modules  # Evita sobreescribir node_modules del container
-    command: npm run dev  # Hot reload en desarrollo
-
-  # ──────────────────────────────────────────
-  # FRONTEND
-  # ──────────────────────────────────────────
-  frontend:
-    build:
-      context: ./src/frontend
-      dockerfile: Dockerfile.dev
-    container_name: postgrado-frontend
-    restart: unless-stopped
-    depends_on:
-      - backend
-    environment:
-      VITE_API_URL: http://localhost:8000/api/v1
-    ports:
-      - "3000:3000"
-    volumes:
-      - ./src/frontend/src:/app/src
-      - /app/node_modules
-
-  # ──────────────────────────────────────────
-  # MAILHOG — Servidor de email falso para desarrollo
-  # Ver emails en: http://localhost:8025
-  # ──────────────────────────────────────────
   mailhog:
     image: mailhog/mailhog:latest
-    container_name: postgrado-mailhog
     ports:
-      - "1025:1025"  # SMTP
-      - "8025:8025"  # UI web para ver emails
+      - "1025:1025" # SMTP: a donde manda el back
+      - "8025:8025" # interfaz web: http://localhost:8025
 
 volumes:
   pgdata:
-    name: postgrado-pgdata
-  postgrado-storage:
-    name: postgrado-storage
-
-# ──────────────────────────────────────────────────────────────
-# INSTRUCCIONES DE USO
-#
-# Primera vez:
-#   cp .env.example .env
-#   docker-compose up -d
-#   docker exec postgrado-backend npm run db:migrate
-#   docker exec postgrado-backend npm run db:seed  # Datos de prueba
-#
-# Ver emails enviados por el sistema:
-#   Abrir http://localhost:8025
-#
-# Acceder a la base de datos:
-#   docker exec -it postgrado-db psql -U postgrado_user -d postgrado_dev
-#
-# Si algo no funciona:
-#   docker-compose down && docker-compose up -d --build
-# ──────────────────────────────────────────────────────────────
