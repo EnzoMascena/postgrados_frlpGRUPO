@@ -1,0 +1,17 @@
+# Secretos: nunca se commitean (la plantilla es .env.example)
+.env
+
+# Python
+.venv/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# PDFs de los aspirantes (en desarrollo, STORAGE_PATH apunta acá)
+.storage/
+
+# Front
+node_modules/
+dist/
