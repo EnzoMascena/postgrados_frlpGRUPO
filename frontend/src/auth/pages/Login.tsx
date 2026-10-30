@@ -7,34 +7,28 @@
    conducción y docentes).
 
    IMPORTANTE ACLARARLE AL PROFESOR:
-   Todavía NO valida usuario ni contraseña. Es una maqueta
-   funcional: al apretar "Ingresar" avisamos al componente App
-   que el usuario entró, y App muestra el resto del sistema. La
-   autenticación real (usuario, contraseña, token) va en la
-   entrega donde conectemos el backend.
+   Todavía NO valida usuario ni contraseña: "Ingresar" lleva
+   directo al dashboard. La autenticación real (usuario,
+   contraseña, token) entra cuando conectemos el login del back.
 
-   CÓMO SE COMUNICA CON App:
-   Recibe por props una función `onLogin`. El botón la ejecuta.
-   App es quien realmente cambia el estado. El hijo no decide,
-   solo avisa.
+   CÓMO NAVEGA:
+   Antes recibía de App una función `onLogin` y App cambiaba su
+   useState. Ahora cambia la URL con `useNavigate()` de React
+   Router, y App muestra la pantalla de esa ruta.
 
    DISEÑO: tarjeta partida en dos paneles → izquierda la marca
    institucional (UTN · FRLP), derecha el formulario.
    ═══════════════════════════════════════════════════════════════ */
 
+import { Link, useNavigate } from 'react-router'
 import { IconSchool, IconEye } from '@tabler/icons-react'
 import Button from '../../shared/components/Button'
 import ThemeToggle from '../../shared/components/ThemeToggle'
 import { controlClass } from '../../shared/components/controls'
 
-// "Props" son los parámetros que un componente recibe de su padre.
-// Acá recibimos una función: la que hay que ejecutar cuando el
-// usuario logra ingresar.
-type Props = {
-  onLogin: () => void
-}
+export default function Login() {
+  const navigate = useNavigate()
 
-export default function Login({ onLogin }: Props) {
   return (
     <div className="relative min-h-screen flex items-center justify-center bg-white dark:bg-page p-6">
       {/* Botón de tema, arriba a la derecha */}
@@ -101,9 +95,8 @@ export default function Login({ onLogin }: Props) {
             </a>
           </div>
 
-          {/* Botón principal: al hacer click ejecuta onLogin, o sea
-              le avisa a App que ya puede mostrar el sistema. */}
-          <Button variant="primary" className="w-full" onClick={onLogin}>
+          {/* Botón principal: por ahora va al dashboard sin validar. */}
+          <Button variant="primary" className="w-full" onClick={() => navigate('/coordinador')}>
             Ingresar
           </Button>
 
@@ -113,16 +106,9 @@ export default function Login({ onLogin }: Props) {
               entra directo al formulario de preinscripción. */}
           <div className="text-[12.5px] text-muted text-center">
             ¿Sos aspirante?{' '}
-            <a
-              href="#"
-              onClick={(e) => {
-                e.preventDefault()
-                onLogin()
-              }}
-              className="text-primary hover:underline"
-            >
+            <Link to="/inscripcion" className="text-primary hover:underline">
               Preinscribite acá
-            </a>
+            </Link>
           </div>
         </div>
 
