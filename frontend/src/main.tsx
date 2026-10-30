@@ -7,7 +7,7 @@
    el index.html, y envolver toda la app con los proveedores
    globales de configuración.
 
-   Las 4 piezas que lo componen:
+   Las 5 piezas que lo componen:
    1) createRoot(...).render(<App />) → React toma ese div del HTML
       y a partir de ahí dibuja TODA la interfaz.
    2) <StrictMode> → modo estricto de React. Solo en desarrollo:
@@ -20,6 +20,9 @@
    4) <BrowserRouter> → React Router. Lee la URL del navegador y
       le avisa a App qué ruta está activa. Envuelve a App para que
       cualquier componente pueda usar NavLink o useNavigate.
+   5) <AuthProvider> → la sesión del coordinador (quién es y su
+      token). Va adentro de QueryClientProvider porque al cerrar
+      sesión vacía la caché de TanStack Query.
 
    FRASE PARA DECIR: "main.tsx es el arranque: engancha React al
    HTML y deja lista la configuración global de la app."
@@ -29,6 +32,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import AuthProvider from './shared/auth/AuthProvider'
 import App from './App'
 import './index.css'
 
@@ -44,7 +48,9 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        <App />
+        <AuthProvider>
+          <App />
+        </AuthProvider>
       </BrowserRouter>
     </QueryClientProvider>
   </StrictMode>,
