@@ -1,0 +1,35 @@
+{#
+  observacion.html — al OBSERVAR.
+  Variables: nombre, comentario (lo escribe el coordinador: se escapa
+  sola, sin el filtro safe), link_recuperar.
+#}
+{% extends "base.html" %}
+
+{% block titulo %}Tu legajo tiene observaciones{% endblock %}
+
+{% block preheader %}La Secretaría de Posgrado te pide que corrijas algo de tu preinscripción.{% endblock %}
+
+{% block contenido %}
+<h1 style="margin:0 0 16px; font-size:22px; line-height:1.3; color:#1E293B;">Tu legajo tiene observaciones</h1>
+<p style="margin:0 0 16px;">Hola {{ nombre }}:</p>
+<p style="margin:0 0 16px;">La Secretaría de Posgrado revisó tu preinscripción y te pide que corrijas lo siguiente:</p>
+
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 24px;">
+  <tr>
+    <td style="background-color:#FEF3C7; border-left:4px solid #D97706; border-radius:6px; padding:16px; white-space:pre-line; color:#1E293B;">{{ comentario }}</td>
+  </tr>
+</table>
+
+<p style="margin:0 0 16px;">Para corregir, pedí un link nuevo con tu email, hacé los cambios y volvé a enviar la preinscripción.</p>
+
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 24px;">
+  <tr>
+    <td style="background-color:#2C5F8A; border-radius:6px;">
+      <a href="{{ link_recuperar }}" style="display:inline-block; padding:12px 24px; font-family:Arial, Helvetica, sans-serif; font-size:15px; font-weight:bold; color:#FFFFFF; text-decoration:none; border-radius:6px;">Pedir el link para corregir</a>
+    </td>
+  </tr>
+</table>
+
+<p style="margin:0 0 8px; font-size:13px; color:#64748B;">Si el botón no funciona, copiá este link en el navegador:</p>
+<p style="margin:0; font-size:13px; word-break:break-all;"><a href="{{ link_recuperar }}" style="color:#2C5F8A;">{{ link_recuperar }}</a></p>
+{% endblock %}
