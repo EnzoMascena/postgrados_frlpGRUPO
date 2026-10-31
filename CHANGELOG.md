@@ -17,9 +17,11 @@ Este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 - Plan del Módulo Core con alcance, reparto, contrato de la API y modelo de datos
 - Esqueleto del backend en FastAPI con Clean Architecture: configuración por variables de entorno, errores uniformes, headers de seguridad y health check
 - Entorno de desarrollo con PostgreSQL 16 y MailHog en `docker-compose.yml`, y tests de integración con rollback por test
+- `docker compose up --build` levanta front, API, base y MailHog; el back migra y carga el seed al arrancar
 
 ### Changed
 - `docker-compose.yml` y `.env.example` reemplazan las plantillas viejas de Node
+- El CI reemplaza el pipeline de Node por ruff, Alembic y pytest con PostgreSQL 16 en el back, y lint y build en el front
 
 ---
 
