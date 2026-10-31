@@ -1,11 +1,12 @@
 # Entorno de desarrollo del Sistema de Posgrado UTN FRLP.
 #
-# Por ahora solo la base y MailHog: sirven para correr el back y los tests en tu máquina.
-#   docker compose up -d db mailhog
-#   docker compose down        # baja todo, conserva la base
-#   docker compose down -v     # baja todo y borra la base (para empezar de cero)
+#   docker compose up --build     # levanta todo: front, API, base y MailHog (anda sin .env)
+#   docker compose up -d db mailhog   # solo la base y MailHog, para correr el back o los tests en tu máquina
+#   docker compose down           # baja todo, conserva la base y los PDFs
+#   docker compose down -v        # baja todo y borra la base y los PDFs (para empezar de cero)
 #
-# Fran suma los servicios `backend` y `frontend` en F1 (US-TECH-001).
+# Front: http://localhost:3000 · Swagger: http://localhost:8000/api/docs · MailHog: http://localhost:8025
+# Cada variable tiene su valor de desarrollo con ${VAR:-default}: el .env solo sirve para cambiarlas.
 
 services:
   db:
@@ -30,5 +31,51 @@ services:
       - "1025:1025" # SMTP: a donde manda el back
       - "8025:8025" # interfaz web: http://localhost:8025
 
+  backend:
+    build: ./backend
+    # Adentro de Docker la base es `db` y el mail es `mailhog`, siempre en sus puertos internos.
+    environment:
+      DATABASE_URL: postgresql+psycopg://${DB_USER:-postgrado_user}:${DB_PASSWORD:-postgrado_dev_password}@db:5432/${DB_NAME:-postgrado_dev}
+      TEST_DATABASE_URL: postgresql+psycopg://${DB_USER:-postgrado_user}:${DB_PASSWORD:-postgrado_dev_password}@db:5432/postgrado_test
+      # Secreto solo de desarrollo, para que levante sin .env. En producción se pone uno propio.
+      JWT_SECRET: ${JWT_SECRET:-secreto-solo-para-desarrollo-de-32-o-mas-caracteres}
+      SMTP_HOST: mailhog
+      SMTP_PORT: 1025
+      STORAGE_PATH: /var/postgrado-storage
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
+      SEED_COORDINADOR_EMAIL: ${SEED_COORDINADOR_EMAIL:-admin@fenix.test}
+      SEED_COORDINADOR_PASSWORD: ${SEED_COORDINADOR_PASSWORD:-Admin1234!}
+    ports:
+      - "8000:8000"
+    volumes:
+      - pdfs:/var/postgrado-storage
+    depends_on:
+      db:
+        condition: service_healthy
+      mailhog:
+        condition: service_started
+    # python:3.12-slim no trae curl: el health check usa urllib.
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      # start.sh migra y carga el seed antes de levantar la API.
+      start_period: 30s
+
+  frontend:
+    build: ./frontend
+    environment:
+      # El proxy de Vite manda /api al back por la red de Docker.
+      VITE_PROXY_TARGET: http://backend:8000
+      VITE_USE_POLLING: "true"
+    ports:
+      - "3000:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+
 volumes:
   pgdata:
+  pdfs:
