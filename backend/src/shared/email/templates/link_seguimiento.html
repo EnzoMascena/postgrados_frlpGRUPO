@@ -1,0 +1,43 @@
+{#
+  link_seguimiento.html — al crear el borrador y al recuperar acceso.
+  Variables: nombre, codigo_seguimiento, link.
+#}
+{% extends "base.html" %}
+
+{% block titulo %}Guardamos tu preinscripción{% endblock %}
+
+{% block preheader %}Tu código de seguimiento es {{ codigo_seguimiento }}. Con este link continuás tu preinscripción.{% endblock %}
+
+{% block contenido %}
+<h1 style="margin:0 0 16px; font-size:22px; line-height:1.3; color:#1E293B;">Guardamos tu preinscripción</h1>
+<p style="margin:0 0 16px;">Hola {{ nombre }}:</p>
+<p style="margin:0 0 16px;">Tus datos quedaron guardados. Para terminar, entrá con el botón de abajo, subí tus documentos en PDF y enviá la preinscripción a revisión.</p>
+
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 24px;">
+  <tr>
+    <td style="background-color:#EBF2FA; border-radius:6px; padding:16px; text-align:center;">
+      <div style="font-size:12px; color:#64748B;">Código de seguimiento</div>
+      <div style="font-family:'Courier New', Courier, monospace; font-size:24px; font-weight:bold; letter-spacing:3px; color:#1E293B;">{{ codigo_seguimiento }}</div>
+    </td>
+  </tr>
+</table>
+
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 24px;">
+  <tr>
+    <td style="background-color:#2C5F8A; border-radius:6px;">
+      <a href="{{ link }}" style="display:inline-block; padding:12px 24px; font-family:Arial, Helvetica, sans-serif; font-size:15px; font-weight:bold; color:#FFFFFF; text-decoration:none; border-radius:6px;">Continuar mi preinscripción</a>
+    </td>
+  </tr>
+</table>
+
+<p style="margin:0 0 8px; font-size:13px; color:#64748B;">Si el botón no funciona, copiá este link en el navegador:</p>
+<p style="margin:0 0 24px; font-size:13px; word-break:break-all;"><a href="{{ link }}" style="color:#2C5F8A;">{{ link }}</a></p>
+
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr>
+    <td style="background-color:#FEF3C7; border-left:4px solid #D97706; border-radius:6px; padding:12px 16px; font-size:13px; color:#1E293B;">
+      El link vence a los 60 días. No lo compartas: con él cualquiera puede ver y modificar tu preinscripción. Si se te vence, pedí uno nuevo desde el formulario con tu email.
+    </td>
+  </tr>
+</table>
+{% endblock %}
