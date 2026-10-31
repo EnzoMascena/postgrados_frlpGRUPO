@@ -32,7 +32,7 @@ from sqlmodel import Session, SQLModel, create_engine  # noqa: E402
 
 from main import app  # noqa: E402
 from src.shared.config import settings  # noqa: E402
-from src.shared.database import get_session  # noqa: E402
+from src.shared.database import get_session, importar_modelos  # noqa: E402
 
 
 def _crear_base_de_test_si_no_existe() -> None:
@@ -54,6 +54,7 @@ def _crear_base_de_test_si_no_existe() -> None:
 def engine():
     _crear_base_de_test_si_no_existe()
     engine = create_engine(settings.test_database_url)
+    importar_modelos()  # sin esto, SQLModel.metadata está vacío y no se crea ninguna tabla
     SQLModel.metadata.drop_all(engine)
     SQLModel.metadata.create_all(engine)
     yield engine
