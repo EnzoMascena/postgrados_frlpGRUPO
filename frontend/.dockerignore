@@ -1,0 +1,3 @@
+# El node_modules de tu máquina tiene binarios de otro sistema: la imagen instala el suyo.
+node_modules/
+dist/
