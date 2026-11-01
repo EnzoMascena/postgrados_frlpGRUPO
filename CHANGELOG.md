@@ -18,6 +18,8 @@ Este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 - Esqueleto del backend en FastAPI con Clean Architecture: configuración por variables de entorno, errores uniformes, headers de seguridad y health check
 - Entorno de desarrollo con PostgreSQL 16 y MailHog en `docker-compose.yml`, y tests de integración con rollback por test
 - `docker compose up --build` levanta front, API, base y MailHog; el back migra y carga el seed al arrancar
+- Base del front para conectarse a la API: rutas con React Router y layouts público y del coordinador, cliente HTTP con el formato de errores del plan, sesión del coordinador con rutas protegidas por rol, catálogos de cohortes y carreras, y los componentes Modal, Alerta, EstadoBadge y Cargando
+- Requisitos de documentos del aspirante: qué corresponde según beca y título de posgrado, checklist de cargados y pendientes, y el error `DOCUMENTOS_FALTANTES` que frena el envío
 
 ### Changed
 - `docker-compose.yml` y `.env.example` reemplazan las plantillas viejas de Node
