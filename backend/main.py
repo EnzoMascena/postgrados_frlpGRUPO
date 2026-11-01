@@ -6,6 +6,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from src.autenticacion.presentation.router import router as autenticacion_router
 from src.shared.config import settings
 from src.shared.error_handlers import registrar_manejadores_de_errores
 from src.shared.health import router as health_router
@@ -39,9 +40,9 @@ app.add_middleware(
 registrar_manejadores_de_errores(app)
 
 app.include_router(health_router, prefix="/api/v1")
+app.include_router(autenticacion_router, prefix="/api/v1")  # Luca (L1)
 
 # Acá suma su router cada dueño, con prefix="/api/v1", una línea por módulo:
-# app.include_router(autenticacion_router, prefix="/api/v1")        # Luca (L1)
 # app.include_router(cohortes_router, prefix="/api/v1")             # Fran (F2)
 # app.include_router(inscripcion_router, prefix="/api/v1")          # Fran (F4)
 # app.include_router(gestion_documental_router, prefix="/api/v1")   # Fran (F5)
