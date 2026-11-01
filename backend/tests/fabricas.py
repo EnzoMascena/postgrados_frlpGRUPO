@@ -8,6 +8,7 @@ Para armar un caso puntual se pisa solo lo que importa:
     legajo = crear_legajo(session, cohorte, [carrera], estado=EstadoLegajo.PENDIENTE, dni="30456789")
 """
 
+import functools
 import itertools
 import secrets
 from datetime import date
@@ -15,13 +16,19 @@ from typing import Any
 
 from sqlmodel import Session, SQLModel
 
+from src.autenticacion.infrastructure.hashing import hashear_password
+from src.autenticacion.infrastructure.jwt_tokens import crear_token
 from src.autenticacion.infrastructure.orm_models import UsuarioORM
+from src.autenticacion.infrastructure.pg_repository import PgUsuarioRepository
 from src.cohortes.domain.tipos import TipoCarrera
 from src.cohortes.infrastructure.orm_models import CarreraORM, CohorteORM
 from src.inscripcion.domain.tipos import ComoConocio
 from src.legajos.domain.estados import EstadoLegajo
 from src.legajos.infrastructure.orm_models import LegajoCarreraORM, LegajoORM
 from src.shared.roles import Rol
+
+# Contraseña de todos los usuarios de prueba: con ella se puede hacer login en los tests.
+CLAVE_DE_PRUEBA = "Clave1234!"
 
 # Un número distinto por cada fila creada: los DNI, los emails y los nombres tienen que ser únicos.
 _secuencia = itertools.count(1)
@@ -38,6 +45,12 @@ def _guardar(session: Session, fila: SQLModel) -> None:
     session.add(fila)
     session.commit()
     session.refresh(fila)
+
+
+@functools.cache
+def _hash_de_la_clave_de_prueba() -> str:
+    # bcrypt tarda unos 250 ms por hash: se calcula una sola vez por corrida y se reutiliza.
+    return hashear_password(CLAVE_DE_PRUEBA)
 
 
 def crear_carrera(
@@ -86,13 +99,18 @@ def crear_usuario(
     usuario = UsuarioORM(
         email=email or f"usuario{next(_secuencia)}@example.com",
         nombre=nombre,
-        # Un hash de mentira: Luca lo cambia por hashear_password cuando entre L1.
-        password_hash="hash-de-prueba",
+        password_hash=_hash_de_la_clave_de_prueba(),
         rol=str(rol),
         activo=activo,
     )
     _guardar(session, usuario)
     return usuario
+
+
+def headers_de(session: Session, usuario: UsuarioORM) -> dict[str, str]:
+    """El header `Authorization: Bearer …` con un token válido para ese usuario."""
+    token, _ = crear_token(PgUsuarioRepository(session).obtener(usuario.id))
+    return {"Authorization": f"Bearer {token}"}
 
 
 def crear_legajo(
