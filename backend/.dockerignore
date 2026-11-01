@@ -1,0 +1,10 @@
+# Lo que no entra a la imagen: el .venv de tu máquina tiene binarios de otro sistema,
+# y el .env y los PDFs no tienen que quedar adentro.
+.venv/
+.env
+.storage/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
