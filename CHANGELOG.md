@@ -22,6 +22,7 @@ Este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 - Login del coordinador con JWT de 8 horas y contraseñas con bcrypt, y control de acceso por rol (`require_role`) para los endpoints protegidos (ADR-003)
 - Plantillas HTML de los 6 emails del core (Jinja2, estilos en línea, logo como `cid:logo-utn`), con sus tests y un script de vista previa
 - `docker compose up --build` levanta front, API, base y MailHog; el back migra y carga el seed al arrancar
+- Envío de emails con `enviar_email`: arma el HTML desde las plantillas, embebe el logo de la UTN y lo manda por SMTP (MailHog en desarrollo), con una bandeja de prueba para los tests
 
 ### Changed
 - `docker-compose.yml` y `.env.example` reemplazan las plantillas viejas de Node
