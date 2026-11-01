@@ -18,6 +18,7 @@ Este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 - Esqueleto del backend en FastAPI con Clean Architecture: configuración por variables de entorno, errores uniformes, headers de seguridad y health check
 - Entorno de desarrollo con PostgreSQL 16 y MailHog en `docker-compose.yml`, y tests de integración con rollback por test
 - `docker compose up --build` levanta front, API, base y MailHog; el back migra y carga el seed al arrancar
+- Período de inscripción por cohorte: `GET /cohortes` y `GET /carreras` públicos para el formulario, y `PATCH /cohortes/{id}/inscripcion` para que el coordinador abra o cierre la inscripción con la próxima apertura
 
 ### Changed
 - `docker-compose.yml` y `.env.example` reemplazan las plantillas viejas de Node
