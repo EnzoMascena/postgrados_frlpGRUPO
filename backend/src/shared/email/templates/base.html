@@ -1,0 +1,54 @@
+{#
+  base.html — ESTRUCTURA COMÚN DE TODOS LOS EMAILS
+  Los clientes de email (Gmail, Outlook) ignoran las hojas de estilo y
+  el CSS moderno, por eso se maqueta con tablas y estilos en línea.
+  Colores: los tokens del wireframe (index.css). Cada plantilla hace
+  {% extends "base.html" %} y completa los bloques titulo, preheader
+  y contenido.
+#}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>{% block titulo %}Sistema de Posgrado{% endblock %}</title>
+</head>
+<body style="margin:0; padding:0; background-color:#F1F5F9;">
+  {# Texto que muestra la bandeja de entrada al lado del asunto. #}
+  <div style="display:none; max-height:0; overflow:hidden; mso-hide:all;">{% block preheader %}{% endblock %}</div>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#F1F5F9;">
+    <tr>
+      <td align="center" style="padding:24px 12px;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:600px; background-color:#FFFFFF; border:1px solid #E2E8F0; border-radius:8px;">
+          <tr>
+            <td style="background-color:#1E293B; padding:16px 24px; border-radius:8px 8px 0 0;">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td style="padding-right:12px; vertical-align:middle;">
+                    <img src="cid:logo-utn" alt="UTN FRLP" height="40" style="display:block; height:40px; border:0; color:#F8FAFC; font-family:Arial, Helvetica, sans-serif; font-size:12px;">
+                  </td>
+                  <td style="vertical-align:middle; font-family:Arial, Helvetica, sans-serif;">
+                    <div style="font-size:11px; letter-spacing:1px; text-transform:uppercase; color:#94A3B8;">UTN · FRLP</div>
+                    <div style="font-size:16px; font-weight:bold; color:#F8FAFC;">Sistema de Posgrado</div>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:32px 24px 24px; font-family:Arial, Helvetica, sans-serif; font-size:15px; line-height:1.6; color:#1E293B;">
+              {% block contenido %}{% endblock %}
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:16px 24px 24px; border-top:1px solid #E2E8F0; font-family:Arial, Helvetica, sans-serif; font-size:12px; line-height:1.5; color:#64748B;">
+              Secretaría de Posgrado · UTN Facultad Regional La Plata · Este es un mensaje automático, no lo respondas
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
