@@ -1,7 +1,7 @@
 """`get_current_user`, `require_role` y `actor_desde_usuario` en una app mínima.
 
-La app tiene los manejadores de errores reales y la `session` de test (con rollback): los
-usuarios se insertan directo con el ORM mientras no estén las fábricas (tests/fabricas.py).
+La app tiene los manejadores de errores reales y la `session` de test (con rollback), y los
+usuarios salen de las fábricas (tests/fabricas.py).
 """
 
 from datetime import UTC, datetime, timedelta
@@ -27,6 +27,7 @@ from src.shared.config import settings
 from src.shared.database import get_session
 from src.shared.error_handlers import registrar_manejadores_de_errores
 from src.shared.roles import Actor, Rol
+from tests.fabricas import crear_usuario
 
 
 @pytest.fixture
@@ -53,15 +54,7 @@ def cliente(session):
 
 
 def insertar_usuario(session, rol: Rol, activo: bool = True) -> Usuario:
-    fila = UsuarioORM(
-        email=f"{rol.lower()}-{uuid4().hex[:6]}@example.com",
-        nombre="Usuario de prueba",
-        password_hash="$2b$12$no-se-usa-en-estos-tests",
-        rol=rol.value,
-        activo=activo,
-    )
-    session.add(fila)
-    session.commit()
+    fila = crear_usuario(session, rol=rol, activo=activo)
     return PgUsuarioRepository(session).obtener(fila.id)
 
 

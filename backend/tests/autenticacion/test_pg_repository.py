@@ -8,21 +8,12 @@ from src.autenticacion.domain.usuario import Usuario
 from src.autenticacion.infrastructure.orm_models import UsuarioORM
 from src.autenticacion.infrastructure.pg_repository import PgUsuarioRepository
 from src.shared.roles import Rol
+from tests.fabricas import crear_usuario
 
 
 @pytest.fixture
 def fila(session) -> UsuarioORM:
-    # Directo con el ORM mientras no estén las fábricas de tests (tests/fabricas.py).
-    fila = UsuarioORM(
-        email="coord@example.com",
-        nombre="María González",
-        password_hash="$2b$12$hash-de-prueba",
-        rol="COORDINADOR",
-        activo=True,
-    )
-    session.add(fila)
-    session.commit()
-    return fila
+    return crear_usuario(session, email="coord@example.com", nombre="María González")
 
 
 def test_buscar_por_email_devuelve_el_usuario_del_dominio(session, fila):
@@ -34,7 +25,7 @@ def test_buscar_por_email_devuelve_el_usuario_del_dominio(session, fila):
         nombre="María González",
         rol=Rol.COORDINADOR,
         activo=True,
-        password_hash="$2b$12$hash-de-prueba",
+        password_hash=fila.password_hash,
     )
     assert isinstance(usuario.rol, Rol)
 
