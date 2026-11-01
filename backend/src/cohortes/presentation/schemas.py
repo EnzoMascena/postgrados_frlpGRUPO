@@ -35,6 +35,16 @@ class CohorteResponse(CamelModel):
     proxima_apertura: date | None
 
 
+class CambiarPeriodoRequest(CamelModel):
+    model_config = ConfigDict(
+        json_schema_extra={"examples": [{"abierta": False, "proximaApertura": "2027-03-01"}]}
+    )
+
+    abierta: bool
+    # Opcional, y solo cuenta al cerrar: al abrir se borra.
+    proxima_apertura: date | None = None
+
+
 class CarreraResponse(CamelModel):
     model_config = ConfigDict(
         json_schema_extra={
