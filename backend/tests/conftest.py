@@ -31,8 +31,11 @@ from sqlalchemy.engine import make_url  # noqa: E402
 from sqlmodel import Session, SQLModel, create_engine  # noqa: E402
 
 from main import app  # noqa: E402
+from src.autenticacion.infrastructure.orm_models import UsuarioORM  # noqa: E402
 from src.shared.config import settings  # noqa: E402
 from src.shared.database import get_session, importar_modelos  # noqa: E402
+from src.shared.roles import Rol  # noqa: E402
+from tests.fabricas import crear_usuario, headers_de  # noqa: E402
 
 
 def _crear_base_de_test_si_no_existe() -> None:
@@ -76,3 +79,31 @@ def client(session):
     yield TestClient(app)
     # Se saca solo este override: un test puede haber agregado otros por su cuenta.
     app.dependency_overrides.pop(get_session, None)
+
+
+# --- Usuarios con sesión iniciada (Luca, L1) ---
+# Para llamar a un endpoint protegido: `client.get("/api/v1/legajos", headers=headers_coordinador)`.
+# Los dos usuarios tienen la contraseña `CLAVE_DE_PRUEBA` de las fábricas. Para otro rol:
+# `headers_de(session, crear_usuario(session, rol=Rol.CPR))`.
+
+
+@pytest.fixture
+def coordinador(session) -> UsuarioORM:
+    return crear_usuario(
+        session, email="coordinador@example.com", rol=Rol.COORDINADOR, nombre="María González"
+    )
+
+
+@pytest.fixture
+def headers_coordinador(session, coordinador) -> dict[str, str]:
+    return headers_de(session, coordinador)
+
+
+@pytest.fixture
+def docente(session) -> UsuarioORM:
+    return crear_usuario(session, email="docente@example.com", rol=Rol.DOCENTE, nombre="Juan Pérez")
+
+
+@pytest.fixture
+def headers_docente(session, docente) -> dict[str, str]:
+    return headers_de(session, docente)
