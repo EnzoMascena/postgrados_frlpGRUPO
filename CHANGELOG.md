@@ -19,6 +19,7 @@ Este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 - Entorno de desarrollo con PostgreSQL 16 y MailHog en `docker-compose.yml`, y tests de integración con rollback por test
 - Base del front para conectarse a la API: rutas con React Router y layouts público y del coordinador, cliente HTTP con el formato de errores del plan, sesión del coordinador con rutas protegidas por rol, catálogos de cohortes y carreras, y los componentes Modal, Alerta, EstadoBadge y Cargando
 - Modelo de datos del Core (8 tablas con sus restricciones), migración inicial con Alembic, fábricas de datos para los tests y ADR-006 (carreras por legajo)
+- Plantillas HTML de los 6 emails del core (Jinja2, estilos en línea, logo como `cid:logo-utn`), con sus tests y un script de vista previa
 
 ### Changed
 - `docker-compose.yml` y `.env.example` reemplazan las plantillas viejas de Node
