@@ -27,7 +27,7 @@
    la única fuente de verdad y el Sidebar no recibe nada.
    ═══════════════════════════════════════════════════════════════ */
 
-import { NavLink, useNavigate } from 'react-router'
+import { NavLink } from 'react-router'
 import {
   IconClipboardList,
   IconLayoutDashboard,
@@ -37,6 +37,7 @@ import {
   IconLogout,
 } from '@tabler/icons-react'
 import type { ElementType } from 'react'
+import { useAuth } from '../auth/useAuth'
 
 type NavItem = { to: string; label: string; icon: ElementType; demo?: boolean }
 type NavGroup = { label: string; items: NavItem[] }
@@ -63,14 +64,20 @@ const groups: NavGroup[] = [
 ]
 
 export default function Sidebar() {
-  const navigate = useNavigate()
+  const { usuario, cerrarSesion } = useAuth()
 
   return (
     <aside className="w-60 flex-shrink-0 bg-sidebar flex flex-col py-3 overflow-y-auto">
-      {/* Logo */}
+      {/* Logo y quién inició sesión */}
       <div className="px-4 pb-4 mb-2 border-b border-white/10">
         <div className="text-[11px] uppercase tracking-wide text-faint">UTN · FRLP</div>
         <div className="text-[13px] font-medium text-on-dark">Sistema Posgrado</div>
+        {usuario && (
+          <div className="mt-3 min-w-0">
+            <div className="text-[12.5px] text-on-dark truncate">{usuario.nombre}</div>
+            <div className="text-[11px] text-faint truncate">{usuario.email}</div>
+          </div>
+        )}
       </div>
 
       {/* Grupos de navegación */}
@@ -106,11 +113,12 @@ export default function Sidebar() {
         </div>
       ))}
 
-      {/* Pie del menú: cerrar sesión. Por ahora solo vuelve al
-          login; en D3 también borra la sesión guardada. */}
+      {/* Pie del menú: cerrar sesión. Borra el token y los datos en
+          caché; como /coordinador está protegida, RutaProtegida ve
+          que ya no hay usuario y manda al login. */}
       <div className="mt-auto px-2 pt-2 border-t border-white/10">
         <button
-          onClick={() => navigate('/login')}
+          onClick={cerrarSesion}
           className="w-full flex items-center gap-2 px-2 py-[7px] rounded-input text-[12.5px] text-faint hover:bg-sidebar-active hover:text-on-dark transition-colors"
         >
           <IconLogout size={15} stroke={1.5} className="flex-shrink-0" />
