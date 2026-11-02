@@ -24,6 +24,7 @@ Este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 - `docker compose up --build` levanta front, API, base y MailHog; el back migra y carga el seed al arrancar
 - Envío de emails con `enviar_email`: arma el HTML desde las plantillas, embebe el logo de la UTN y lo manda por SMTP (MailHog en desarrollo), con una bandeja de prueba para los tests
 - Período de inscripción por cohorte: `GET /cohortes` y `GET /carreras` públicos para el formulario, y `PATCH /cohortes/{id}/inscripcion` para que el coordinador abra o cierre la inscripción con la próxima apertura
+- Login del coordinador conectado a la API: errores del back en pantalla, "Recordarme", aviso de sesión vencida, rutas del coordinador protegidas por rol y cierre de sesión
 
 ### Changed
 - `docker-compose.yml` y `.env.example` reemplazan las plantillas viejas de Node
