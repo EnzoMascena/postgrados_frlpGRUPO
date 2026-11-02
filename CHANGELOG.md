@@ -19,6 +19,7 @@ Este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 - Entorno de desarrollo con PostgreSQL 16 y MailHog en `docker-compose.yml`, y tests de integración con rollback por test
 - `docker compose up --build` levanta front, API, base y MailHog; el back migra y carga el seed al arrancar
 - Período de inscripción por cohorte: `GET /cohortes` y `GET /carreras` públicos para el formulario, y `PATCH /cohortes/{id}/inscripcion` para que el coordinador abra o cierre la inscripción con la próxima apertura
+- Máquina de estados del legajo: tabla de transiciones por rol con las acciones permitidas en cada estado, número de legajo `AA-CCC-SSS` y regla de vencimiento de la reserva a los 30 días (BR-005), documentada en el ADR-004
 
 ### Changed
 - `docker-compose.yml` y `.env.example` reemplazan las plantillas viejas de Node
