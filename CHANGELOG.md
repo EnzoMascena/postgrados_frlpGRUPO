@@ -19,6 +19,8 @@ Este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 - Entorno de desarrollo con PostgreSQL 16 y MailHog en `docker-compose.yml`, y tests de integración con rollback por test
 - `docker compose up --build` levanta front, API, base y MailHog; el back migra y carga el seed al arrancar
 - Período de inscripción por cohorte: `GET /cohortes` y `GET /carreras` públicos para el formulario, y `PATCH /cohortes/{id}/inscripcion` para que el coordinador abra o cierre la inscripción con la próxima apertura
+- Base del front para conectarse a la API: rutas con React Router y layouts público y del coordinador, cliente HTTP con el formato de errores del plan, sesión del coordinador con rutas protegidas por rol, catálogos de cohortes y carreras, y los componentes Modal, Alerta, EstadoBadge y Cargando
+- Seed idempotente de datos de prueba (`uv run python -m scripts.seed`): 3 carreras, 3 cohortes, el coordinador con la clave de la configuración y 11 legajos con su historial, uno de ellos COMPLETADO hace 31 días para mostrar el vencimiento en la demo
 
 ### Changed
 - `docker-compose.yml` y `.env.example` reemplazan las plantillas viejas de Node
