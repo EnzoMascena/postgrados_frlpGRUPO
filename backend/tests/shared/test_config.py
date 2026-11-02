@@ -31,7 +31,15 @@ def test_los_origenes_cors_se_separan_por_comas_y_se_limpian():
 
 
 def test_los_valores_por_defecto_son_los_del_plan(monkeypatch):
-    for variable in ("JWT_EXPIRA_MINUTOS", "TOKEN_SEGUIMIENTO_DIAS", "ZONA_HORARIA"):
+    # Los valores por defecto se miden sin lo que ponga el entorno: el compose, por ejemplo,
+    # define SEED_COORDINADOR_* dentro del contenedor.
+    for variable in (
+        "JWT_EXPIRA_MINUTOS",
+        "TOKEN_SEGUIMIENTO_DIAS",
+        "ZONA_HORARIA",
+        "SEED_COORDINADOR_EMAIL",
+        "SEED_COORDINADOR_PASSWORD",
+    ):
         monkeypatch.delenv(variable, raising=False)
 
     settings = Settings(_env_file=None, jwt_secret=SECRETO_VALIDO)

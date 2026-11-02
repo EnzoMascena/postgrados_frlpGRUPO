@@ -17,7 +17,12 @@ Este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 - Plan del Módulo Core con alcance, reparto, contrato de la API y modelo de datos
 - Esqueleto del backend en FastAPI con Clean Architecture: configuración por variables de entorno, errores uniformes, headers de seguridad y health check
 - Entorno de desarrollo con PostgreSQL 16 y MailHog en `docker-compose.yml`, y tests de integración con rollback por test
+- Base del front para conectarse a la API: rutas con React Router y layouts público y del coordinador, cliente HTTP con el formato de errores del plan, sesión del coordinador con rutas protegidas por rol, catálogos de cohortes y carreras, y los componentes Modal, Alerta, EstadoBadge y Cargando
+- Modelo de datos del Core (8 tablas con sus restricciones), migración inicial con Alembic, fábricas de datos para los tests y ADR-006 (carreras por legajo)
+- Login del coordinador con JWT de 8 horas y contraseñas con bcrypt, y control de acceso por rol (`require_role`) para los endpoints protegidos (ADR-003)
+- Plantillas HTML de los 6 emails del core (Jinja2, estilos en línea, logo como `cid:logo-utn`), con sus tests y un script de vista previa
 - `docker compose up --build` levanta front, API, base y MailHog; el back migra y carga el seed al arrancar
+- Envío de emails con `enviar_email`: arma el HTML desde las plantillas, embebe el logo de la UTN y lo manda por SMTP (MailHog en desarrollo), con una bandeja de prueba para los tests
 - Período de inscripción por cohorte: `GET /cohortes` y `GET /carreras` públicos para el formulario, y `PATCH /cohortes/{id}/inscripcion` para que el coordinador abra o cierre la inscripción con la próxima apertura
 
 ### Changed
