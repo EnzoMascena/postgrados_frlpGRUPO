@@ -16,6 +16,8 @@
      · LayoutPublico → inscripción y seguimiento (sin menú).
      · LayoutCoordinador → todo lo de /coordinador (con Sidebar).
    El layout dibuja lo común y, en su <Outlet />, la pantalla hija.
+   RutaProtegida funciona igual, pero en vez de dibujar algo decide
+   si deja pasar: sin sesión, al login.
 
    ESTRUCTURA DEL PROYECTO (mencionar al pasar):
    src/ está dividido por MÓDULO, no por tipo de archivo:
@@ -32,6 +34,7 @@ import { Navigate, Route, Routes } from 'react-router'
 import LayoutPublico from './shared/layout/LayoutPublico'
 import LayoutCoordinador from './shared/layout/LayoutCoordinador'
 import NoEncontrado from './shared/pages/NoEncontrado'
+import RutaProtegida from './shared/auth/RutaProtegida'
 import Login from './auth/pages/Login'
 import FormularioInscripcion from './inscripcion/pages/FormularioInscripcion'
 import Seguimiento from './seguimiento/pages/Seguimiento'
@@ -56,14 +59,17 @@ export default function App() {
         <Route path="/seguimiento/:token" element={<Seguimiento />} />
       </Route>
 
-      {/* Coordinador. `index` es la ruta "/coordinador" a secas.
-          En D3 este bloque queda adentro de RutaProtegida. */}
-      <Route path="/coordinador" element={<LayoutCoordinador />}>
-        <Route index element={<Dashboard />} />
-        <Route path="legajos/:id" element={<DetalleLegajo />} />
-        <Route path="legajo-academico" element={<Legajo />} />
-        <Route path="estadisticas" element={<Estadisticas />} />
-        <Route path="planilla" element={<PlanillaDocente />} />
+      {/* Coordinador: RutaProtegida deja pasar solo con sesión y rol
+          COORDINADOR; si no, manda al login (o a NoEncontrado).
+          `index` es la ruta "/coordinador" a secas. */}
+      <Route element={<RutaProtegida rol="COORDINADOR" />}>
+        <Route path="/coordinador" element={<LayoutCoordinador />}>
+          <Route index element={<Dashboard />} />
+          <Route path="legajos/:id" element={<DetalleLegajo />} />
+          <Route path="legajo-academico" element={<Legajo />} />
+          <Route path="estadisticas" element={<Estadisticas />} />
+          <Route path="planilla" element={<PlanillaDocente />} />
+        </Route>
       </Route>
 
       {/* Cualquier otra dirección. */}
