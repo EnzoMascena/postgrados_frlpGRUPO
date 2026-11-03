@@ -33,6 +33,7 @@ Este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 ### Changed
 - `docker-compose.yml` y `.env.example` reemplazan las plantillas viejas de Node
 - El CI reemplaza el pipeline de Node por ruff, Alembic y pytest con PostgreSQL 16 en el back, y lint y build en el front
+- En `docker compose`, el front monta el código y recarga solo al guardar, y el back corre el seed siempre al arrancar (ya sin el `if` provisorio)
 
 ---
 
