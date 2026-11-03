@@ -1,18 +1,30 @@
-"""`LegajoRepository` con SQLModel: lee y escribe `legajos` y `auditoria_legajos`.
+"""`LegajoRepository` y `DetalleRepository` con SQLModel: lee y escribe `legajos` y
+`auditoria_legajos`, y lee lo que el detalle necesita de `cohortes`, `carreras` y `documentos`.
 
-Devuelve las entidades del dominio (`Legajo`, `DatosCohorte`), nunca las filas ORM: así
-`ServicioEstados` no se entera de que hay una base.
+Devuelve las entidades del dominio y los datos del caso de uso (`Legajo`, `FichaLegajo`, …),
+nunca las filas ORM: así `ServicioEstados` y `obtener_detalle` no se enteran de que hay una base.
 """
 
 from uuid import UUID
 
 from sqlmodel import Session, select
 
+from src.cohortes.domain.tipos import TipoCarrera
 from src.cohortes.infrastructure.orm_models import CarreraORM, CohorteORM
+from src.gestion_documental.domain.tipos import TipoDocumento
+from src.gestion_documental.infrastructure.orm_models import DocumentoORM
+from src.inscripcion.domain.tipos import ComoConocio, TipoBeca
+from src.legajos.application.obtener_detalle import (
+    CarreraResumen,
+    CohorteResumen,
+    DocumentoCargado,
+    FichaLegajo,
+)
 from src.legajos.domain.entidades import DatosCohorte, Legajo, RegistroAuditoria
-from src.legajos.domain.estados import EstadoLegajo
+from src.legajos.domain.estados import Accion, EstadoLegajo
 from src.legajos.infrastructure.orm_models import AuditoriaLegajoORM, LegajoCarreraORM, LegajoORM
 from src.shared.errors import NoEncontrado
+from src.shared.roles import Rol
 
 
 class PgLegajoRepository:
@@ -82,6 +94,89 @@ class PgLegajoRepository:
         # Un solo commit: el estado y su auditoría quedan los dos o ninguno. También libera el
         # bloqueo de la cohorte que tomó `siguiente_secuencial`.
         self.session.commit()
+
+    # --- Lo que lee el detalle (`obtener_detalle`) ---
+
+    def ficha(self, legajo_id: UUID) -> FichaLegajo | None:
+        fila = self.session.get(LegajoORM, legajo_id)
+        if fila is None:
+            return None
+        cohorte = self.session.get(CohorteORM, fila.cohorte_id)
+        carreras = self.session.exec(
+            select(CarreraORM)
+            .join(LegajoCarreraORM, LegajoCarreraORM.carrera_id == CarreraORM.id)
+            .where(LegajoCarreraORM.legajo_id == legajo_id)
+            .order_by(LegajoCarreraORM.orden)
+        ).all()
+        return FichaLegajo(
+            id=fila.id,
+            codigo_seguimiento=fila.codigo_seguimiento,
+            numero_legajo=fila.numero_legajo,
+            estado=EstadoLegajo(fila.estado),
+            cohorte=CohorteResumen(id=cohorte.id, nombre=cohorte.nombre, anio=cohorte.anio),
+            carreras=[
+                CarreraResumen(id=carrera.id, nombre=carrera.nombre, tipo=TipoCarrera(carrera.tipo))
+                for carrera in carreras
+            ],
+            apellido=fila.apellido,
+            nombre=fila.nombre,
+            nacionalidad=fila.nacionalidad,
+            dni=fila.dni,
+            telefono_movil=fila.telefono_movil,
+            telefono_fijo=fila.telefono_fijo,
+            email=fila.email,
+            email_alternativo=fila.email_alternativo,
+            domicilio=fila.domicilio,
+            ciudad=fila.ciudad,
+            provincia=fila.provincia,
+            pais=fila.pais,
+            titulo_grado=fila.titulo_grado,
+            titulo_posgrado=fila.titulo_posgrado,
+            como_conocio=ComoConocio(fila.como_conocio),
+            motivacion=fila.motivacion,
+            solicita_beca=fila.solicita_beca,
+            tipo_beca=TipoBeca(fila.tipo_beca) if fila.tipo_beca else None,
+            fecha_inscripcion=fila.fecha_inscripcion,
+            fecha_aprobacion=fila.fecha_aprobacion,
+            fecha_activacion=fila.fecha_activacion,
+            created_at=fila.created_at,
+        )
+
+    def documentos_cargados(self, legajo_id: UUID) -> list[DocumentoCargado]:
+        # Solo los datos del archivo: el path en disco y el checksum no salen de acá.
+        filas = self.session.exec(
+            select(DocumentoORM).where(DocumentoORM.legajo_id == legajo_id)
+        ).all()
+        return [
+            DocumentoCargado(
+                id=fila.id,
+                tipo=TipoDocumento(fila.tipo),
+                nombre_original=fila.nombre_original,
+                tamanio_bytes=fila.tamanio_bytes,
+                fecha_subida=fila.fecha_subida,
+            )
+            for fila in filas
+        ]
+
+    def historial(self, legajo_id: UUID) -> list[RegistroAuditoria]:
+        filas = self.session.exec(
+            select(AuditoriaLegajoORM)
+            .where(AuditoriaLegajoORM.legajo_id == legajo_id)
+            .order_by(AuditoriaLegajoORM.created_at)
+        ).all()
+        return [
+            RegistroAuditoria(
+                legajo_id=fila.legajo_id,
+                accion=Accion(fila.accion),
+                estado_anterior=EstadoLegajo(fila.estado_anterior),
+                estado_nuevo=EstadoLegajo(fila.estado_nuevo),
+                comentario=fila.comentario,
+                rol=Rol(fila.rol),
+                usuario_email=fila.usuario_email,
+                fecha=fila.created_at,
+            )
+            for fila in filas
+        ]
 
 
 def _a_dominio(fila: LegajoORM) -> Legajo:

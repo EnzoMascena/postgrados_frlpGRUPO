@@ -1,12 +1,21 @@
 """`PgLegajoRepository` contra la base de test (con rollback por test, ver conftest)."""
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
 import pytest
 from sqlalchemy import event
 from sqlmodel import select
 
+from src.cohortes.domain.tipos import TipoCarrera
+from src.gestion_documental.domain.tipos import TipoDocumento
+from src.gestion_documental.infrastructure.orm_models import DocumentoORM
+from src.inscripcion.domain.tipos import ComoConocio, TipoBeca
+from src.legajos.application.obtener_detalle import (
+    CarreraResumen,
+    CohorteResumen,
+    DocumentoCargado,
+)
 from src.legajos.domain.entidades import DatosCohorte, Legajo, RegistroAuditoria
 from src.legajos.domain.estados import Accion, EstadoLegajo
 from src.legajos.infrastructure.orm_models import AuditoriaLegajoORM, LegajoORM
@@ -215,3 +224,180 @@ def test_guardar_cambio_de_un_legajo_inexistente_da_no_encontrado(repo):
 
     with pytest.raises(NoEncontrado):
         repo.guardar_cambio(legajo, registro)
+
+
+# --- Consultas del detalle ---
+
+
+def _subir_documento(session, legajo, tipo: TipoDocumento, nombre: str) -> DocumentoORM:
+    # No hay fábrica de documentos todavía (las fábricas son de Enzo): se crea la fila acá.
+    fila = DocumentoORM(
+        legajo_id=legajo.id,
+        tipo=tipo.value,
+        path_storage=f"uploads/{legajo.cohorte_id}/{legajo.id}/{uuid4()}.pdf",
+        nombre_original=nombre,
+        checksum_sha256="0" * 64,
+        tamanio_bytes=183_412,
+        fecha_subida=AHORA,
+    )
+    session.add(fila)
+    session.commit()
+    session.refresh(fila)
+    return fila
+
+
+def _auditar(
+    session, legajo, accion: Accion, desde, hacia, fecha, comentario=None, rol=Rol.COORDINADOR
+):
+    session.add(
+        AuditoriaLegajoORM(
+            legajo_id=legajo.id,
+            accion=accion.value,
+            estado_anterior=desde.value,
+            estado_nuevo=hacia.value,
+            comentario=comentario,
+            rol=rol.value,
+            usuario_email="coordinador@example.com" if rol == Rol.COORDINADOR else None,
+            created_at=fecha,
+        )
+    )
+    session.commit()
+
+
+def test_ficha_trae_los_datos_con_la_cohorte_y_las_carreras_en_orden(
+    repo, session, cohorte, carrera
+):
+    segunda = crear_carrera(
+        session, nombre="Especialización en Ingeniería Gerencial", tipo=TipoCarrera.ESPECIALIZACION
+    )
+    fila = crear_legajo(
+        session,
+        cohorte,
+        [segunda, carrera],
+        estado=EstadoLegajo.PENDIENTE,
+        dni="28456789",
+        email="ana@example.com",
+        solicita_beca=True,
+        tipo_beca=TipoBeca.TREINTA.value,
+        titulo_posgrado="Especialista en Redes",
+        fecha_inscripcion=AHORA,
+    )
+
+    ficha = repo.ficha(fila.id)
+
+    assert ficha.cohorte == CohorteResumen(id=cohorte.id, nombre="Cohorte 2026", anio=2026)
+    assert ficha.carreras == [
+        CarreraResumen(
+            id=segunda.id,
+            nombre="Especialización en Ingeniería Gerencial",
+            tipo=TipoCarrera.ESPECIALIZACION,
+        ),
+        CarreraResumen(
+            id=carrera.id, nombre="Maestría en Tecnología Informática", tipo=TipoCarrera.MAESTRIA
+        ),
+    ]
+    assert (ficha.estado, ficha.dni, ficha.email, ficha.fecha_inscripcion) == (
+        EstadoLegajo.PENDIENTE,
+        "28456789",
+        "ana@example.com",
+        AHORA,
+    )
+    assert (ficha.solicita_beca, ficha.tipo_beca, ficha.titulo_posgrado) == (
+        True,
+        TipoBeca.TREINTA,
+        "Especialista en Redes",
+    )
+    assert ficha.como_conocio == ComoConocio.EGRESADOS
+    assert ficha.created_at == fila.created_at
+    # Los enums vuelven como enums, no como texto.
+    assert isinstance(ficha.estado, EstadoLegajo)
+    assert isinstance(ficha.tipo_beca, TipoBeca)
+
+
+def test_ficha_sin_beca_trae_tipo_beca_nulo(repo, session, cohorte, carrera):
+    fila = crear_legajo(session, cohorte, [carrera])
+
+    assert repo.ficha(fila.id).tipo_beca is None
+
+
+def test_ficha_de_un_legajo_inexistente_es_none(repo):
+    assert repo.ficha(uuid4()) is None
+
+
+def test_documentos_cargados_trae_solo_los_del_legajo(repo, session, cohorte, carrera):
+    legajo = crear_legajo(session, cohorte, [carrera])
+    otro = crear_legajo(session, cohorte, [carrera])
+    dni = _subir_documento(session, legajo, TipoDocumento.DNI, "dni.pdf")
+    _subir_documento(session, otro, TipoDocumento.DNI, "dni-de-otro.pdf")
+
+    assert repo.documentos_cargados(legajo.id) == [
+        DocumentoCargado(
+            id=dni.id,
+            tipo=TipoDocumento.DNI,
+            nombre_original="dni.pdf",
+            tamanio_bytes=183_412,
+            fecha_subida=AHORA,
+        )
+    ]
+
+
+def test_documentos_cargados_sin_ninguno_es_lista_vacia(repo, session, cohorte, carrera):
+    legajo = crear_legajo(session, cohorte, [carrera])
+
+    assert repo.documentos_cargados(legajo.id) == []
+
+
+def test_historial_va_de_la_fila_mas_vieja_a_la_mas_nueva(repo, session, cohorte, carrera):
+    legajo = crear_legajo(session, cohorte, [carrera], estado=EstadoLegajo.OBSERVADO)
+    # Se cargan desordenadas a propósito.
+    _auditar(
+        session,
+        legajo,
+        Accion.OBSERVAR,
+        EstadoLegajo.EN_REVISION,
+        EstadoLegajo.OBSERVADO,
+        AHORA + timedelta(hours=2),
+        comentario="Falta el DNI",
+    )
+    _auditar(
+        session,
+        legajo,
+        Accion.ENVIAR,
+        EstadoLegajo.BORRADOR,
+        EstadoLegajo.PENDIENTE,
+        AHORA,
+        rol=Rol.ASPIRANTE,
+    )
+    _auditar(
+        session,
+        legajo,
+        Accion.REVISAR,
+        EstadoLegajo.PENDIENTE,
+        EstadoLegajo.EN_REVISION,
+        AHORA + timedelta(hours=1),
+    )
+
+    historial = repo.historial(legajo.id)
+
+    assert [registro.accion for registro in historial] == [
+        Accion.ENVIAR,
+        Accion.REVISAR,
+        Accion.OBSERVAR,
+    ]
+    assert historial[0] == RegistroAuditoria(
+        legajo_id=legajo.id,
+        accion=Accion.ENVIAR,
+        estado_anterior=EstadoLegajo.BORRADOR,
+        estado_nuevo=EstadoLegajo.PENDIENTE,
+        comentario=None,
+        rol=Rol.ASPIRANTE,
+        usuario_email=None,
+        fecha=AHORA,
+    )
+    assert historial[2].comentario == "Falta el DNI"
+
+
+def test_historial_sin_cambios_es_lista_vacia(repo, session, cohorte, carrera):
+    legajo = crear_legajo(session, cohorte, [carrera])
+
+    assert repo.historial(legajo.id) == []
