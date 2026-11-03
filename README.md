@@ -16,8 +16,121 @@
 **Este repositorio es el punto de entrada único** para todos los equipos del curso. Cada equipo implementa el **Módulo Core (obligatorio para todos)** más **un módulo especializado** asignado por sorteo.
 
 ---
+
+## Cómo levantar el proyecto
+
+### Qué necesitás instalado
+
+| Herramienta | Versión | Para qué |
+|---|---|---|
+| Git | cualquiera | Clonar el repo |
+| Docker Desktop (con Compose v2) | actual | Levanta todo con un solo comando |
+| uv | actual | Solo si corrés el back o los tests fuera de Docker. Instala Python 3.12 si no lo tenés |
+
+- **uv:** en Linux o macOS `curl -LsSf https://astral.sh/uv/install.sh | sh`; en Windows `powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"`.
+
+### Levantar todo con un comando
+
+```bash
+git clone https://github.com/EnzoMascena/postgrados_frlpGRUPO.git
+cd postgrados_frlpGRUPO
+git switch develop          # hasta la v0.5 (10/11/2026), el Core vive en develop y no en main
+cp .env.example .env        # en PowerShell: Copy-Item .env.example .env
+docker compose up --build
+```
+
+La primera vez tarda unos minutos, porque construye las imágenes. Levanta cuatro servicios: la base (PostgreSQL 16), MailHog, el back y el front. Al arrancar, el back **migra la base y carga los datos de prueba** (3 carreras, 3 cohortes, el coordinador y 11 legajos), así que no hay que correr nada más.
+
+El `.env` **nunca se commitea**. El de `.env.example` ya sirve para desarrollo, pero cambiá `JWT_SECRET` por uno propio si lo vas a usar fuera de tu máquina.
+
+### Dónde está cada cosa
+
+| Qué | URL |
+|---|---|
+| Front | http://localhost:3000 |
+| API, con Swagger | http://localhost:8000/api/docs |
+| Estado de la API y de la base | http://localhost:8000/api/v1/health |
+| MailHog (los emails que manda el sistema) | http://localhost:8025 |
+| PostgreSQL | `localhost:5432` (usuario, clave y nombre en tu `.env`) |
+
+### Usuario de prueba
+
+Entrá a http://localhost:3000/login con el coordinador que crea el seed:
+
+| Email | Clave | Rol |
+|---|---|---|
+| `admin@fenix.test` | `Admin1234!` | Coordinador |
+
+Son datos de prueba de la cátedra, no una clave real. El aspirante no tiene usuario: entra al formulario público y después sigue su trámite con un link que le llega por email, que se ve en MailHog (esta parte está en construcción).
+
+---
+
+## Trabajar en el día a día
+
+### Comandos de Docker
+
+| Comando | Qué hace |
+|---|---|
+| `docker compose up -d` | Levanta todo en segundo plano |
+| `docker compose logs -f backend` | Muestra los logs del back (también `frontend`, `db`, `mailhog`) |
+| `docker compose down` | Frena todo y conserva la base |
+| `docker compose down -v` | Frena todo y **borra la base**: el próximo `up --build` la recrea con el seed |
+| `docker compose up -d --build backend` | Reconstruye el back después de cambiar su código o sus dependencias (el back **no** monta el código en el contenedor) |
+
+El front monta `./frontend` en el contenedor: cuando cambiás el código, Vite recarga el navegador sin reconstruir. Si cambia `package.json`, usá `docker compose up -d --build -V frontend`.
+
+### Tests, lint y migraciones del back
+
+Los tests necesitan la base. Con Docker, adentro del contenedor:
+
+```bash
+docker compose exec backend uv run pytest
+```
+
+O desde tu máquina (levantá antes la base con `docker compose up -d db`):
+
+```bash
+cd backend
+uv sync                                   # instala las dependencias fijadas en uv.lock
+uv run pytest                             # tests y cobertura (mínimo 70 %)
+uv run ruff check . && uv run ruff format --check .
+uv run alembic upgrade head               # aplica las migraciones
+uv run python -m scripts.seed             # carga los datos de prueba (se puede correr varias veces)
+```
+
+Las migraciones nuevas: `uv run alembic revision --autogenerate -m "descripcion"`. Ojo: Alembic **no detecta los cambios en los `CHECK`**; esos hay que escribirlos a mano en la migración.
+
+---
+
+## Estructura del repositorio
+
+```
+backend/                 API en FastAPI
+  main.py                crea la app y registra los routers
+  src/<modulo>/          autenticacion, cohortes, inscripcion, gestion_documental, legajos y shared
+    domain/              reglas del negocio, en Python puro
+    application/         casos de uso
+    infrastructure/      tablas (SQLModel) y repositorios
+    presentation/        endpoints y schemas de la API
+  alembic/               migraciones de la base
+  scripts/               seed y vista previa de los emails
+  tests/                 un directorio por módulo
+frontend/src/<modulo>/   React: pantallas por módulo y lo compartido en shared/
+adr/                     decisiones de arquitectura (por qué elegimos lo que elegimos)
+docs/                    plan del Core, SRS, arquitectura y wireframes
+```
+
+### Documentación
+
+- [`docs/PLAN_CORE.md`](docs/PLAN_CORE.md): alcance, reparto de tareas y contrato de la API del Core.
+- [`docs/ARQUITECTURA.md`](docs/ARQUITECTURA.md) y [`adr/`](adr/): cómo está armado y por qué.
+- [`CONTRIBUTING.md`](CONTRIBUTING.md): ramas, commits, Pull Requests y revisión de código.
+- [`docs/DEFINITION_OF_DONE.md`](docs/DEFINITION_OF_DONE.md): cuándo una tarea está terminada.
+- [`CHANGELOG.md`](CHANGELOG.md): qué cambió en cada versión.
+
+---
+
 ## Equipo
-**Esta seccion es un template para el equipo, debe completarse en le primer commit**
 
 | Nombre              | Rol                          | GitHub                          | Email                          |
 |---------------------|------------------------------|---------------------------------|--------------------------------|
@@ -49,30 +162,20 @@
 
 ## Reglas No Negociables
 
-## Stack Tecnológico 
-** Template a completar por el equipo** 
-
 ## Stack Tecnológico
 
-| Capa              | Recomendado (Prioridad: Simplicidad + Demanda) | Alternativa (Mayor estructura / Enterprise) | Justificación |
-|-------------------|------------------------------------------------|---------------------------------------------|-------------|
-| **Frontend**     | **React 19 + TypeScript + Vite + TailwindCSS + TanStack Query** | Next.js 15+ (App Router) | React sigue siendo la tecnología frontend **más demandada** del mercado. Vite es muy rápido y simple. TanStack Query simplifica mucho la gestión de datos. |
-| **Backend**      | **FastAPI (Python 3.12+)**                    | NestJS (TypeScript)                        | FastAPI es **mucho más simple**, rápido de desarrollar, tiene documentación automática (Swagger) y excelente rendimiento. Ideal para proyectos académicos y APIs modernas. NestJS ofrece más estructura pero aumenta la complejidad. |
-| **ORM / DB Layer** | **SQLAlchemy 2.0 + Alembic** (con async support) | Tortoise ORM o Prisma (si vas full TypeScript) | SQLAlchemy es el estándar más maduro y potente para Python. Alembic maneja migraciones muy bien. Para proyectos simples también puedes usar **SQLModel** (de tiangolo, creador de FastAPI) → aún más simple. |
-| **Base de Datos** | **PostgreSQL 16/17 (Docker)**                 | ← igual                                    | Mejor relación rendimiento / features / ecosistema. Excelente con Docker. |
-| **Testing**       | **Pytest + HTTPX** (unitarias + integración) + **Playwright** (E2E opcional) | Vitest + Supertest (si usas NestJS)       | Pytest es muy simple y potente. Enfocarte solo en **unitarias** como dijiste es una buena decisión para no complicar el proyecto. |
-| **DevOps / Infra**| **Docker + Docker Compose + GitHub Actions** | ← igual                                    | Estándar actual. Muy simple de configurar con `docker-compose.yml`. |
+| Capa | Tecnología | Por qué |
+|------|------------|---------|
+| **Frontend** | React 19 + TypeScript + Vite + Tailwind CSS 4 + TanStack Query + React Router | Es lo que ya tenía la entrega del front |
+| **Backend** | FastAPI (Python 3.12) | Swagger automático, validación con Pydantic y lógica de negocio en Python puro |
+| **Base de datos** | PostgreSQL 16 con SQLModel (SQLAlchemy 2) y Alembic | La base hace cumplir las reglas (restricciones `UNIQUE` y `CHECK`) y migra con Alembic |
+| **Testing** | pytest + httpx, con cobertura mínima del 70 % | Los tests corren contra el mismo PostgreSQL que el sistema real |
+| **Dependencias** | uv (back) y npm (front), con `uv.lock` y `package-lock.json` | Todos instalamos exactamente las mismas versiones |
+| **DevOps** | Docker Compose y GitHub Actions | `docker compose up --build` levanta todo; el CI corre ruff, Alembic, pytest, lint y build |
 
-### Por qué elegimos este stack
+El detalle de por qué elegimos este stack y qué trade-offs aceptamos está en [`adr/ADR-001-stack.md`](adr/ADR-001-stack.md).
 
-- **Alta empleabilidad**: React y PostgreSQL son de las tecnologías más solicitadas en 2026.
-- **Simplicidad y velocidad de desarrollo**: FastAPI + SQLModel permite crear APIs completas con muy poco código.
-- **Moderno pero maduro**: Evitamos tecnologías demasiado experimentales.
-- **Full Docker**: Todo el entorno se levanta con un solo comando (`docker compose up`).
-
-**¿Quieres cambiar algo?**  
-El stack es flexible. Si prefieres **full TypeScript** (React + NestJS + Prisma), también es una excelente opción (más demandada en algunas empresas, pero más verbose).
-> El stack es sugerido. Si el equipo quiere otra tecnología, debe presentar un **RFC aprobado antes de la semana 4**.
+> El stack lo sugiere la cátedra. Si el equipo quiere otra tecnología, debe presentar un **RFC aprobado antes de la semana 4**.
 
 
 ---
