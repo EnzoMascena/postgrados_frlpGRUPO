@@ -36,7 +36,6 @@
 ```bash
 git clone https://github.com/EnzoMascena/postgrados_frlpGRUPO.git
 cd postgrados_frlpGRUPO
-git switch develop          # hasta la v0.5 (10/11/2026), el Core vive en develop y no en main
 cp .env.example .env        # en PowerShell: Copy-Item .env.example .env
 docker compose up --build
 ```
