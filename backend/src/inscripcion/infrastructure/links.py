@@ -13,6 +13,7 @@ from sqlmodel import Session, select
 
 from src.inscripcion.infrastructure.orm_models import TokenSeguimientoORM
 from src.shared.config import settings
+from src.shared.email.sender import enviar_email
 from src.shared.orm import ahora_utc
 
 
@@ -37,6 +38,16 @@ def crear_link_seguimiento(session: Session, legajo_id: UUID) -> str:
 def link_de(token: str) -> str:
     """La URL que va en el email: la pantalla de seguimiento del front."""
     return f"{settings.frontend_url}/seguimiento/{token}"
+
+
+def enviar_link_de_seguimiento(destinatario: str, nombre: str, codigo: str, token: str) -> bool:
+    """El email `link_seguimiento.html`: al crear el borrador y al recuperar el acceso."""
+    return enviar_email(
+        destinatario,
+        "Tu preinscripción al Posgrado UTN FRLP",
+        "link_seguimiento.html",
+        {"nombre": nombre, "codigo_seguimiento": codigo, "link": link_de(token)},
+    )
 
 
 def buscar_legajo_por_token(session: Session, token: str) -> UUID | None:
