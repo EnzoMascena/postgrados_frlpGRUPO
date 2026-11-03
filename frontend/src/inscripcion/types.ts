@@ -66,6 +66,11 @@ export type RespuestaInscripcion = {
   estado: EstadoLegajo
 }
 
+/** La respuesta 202 de POST /legajos/recuperar-acceso (es la misma exista o no el email). */
+export type RespuestaRecuperarAcceso = {
+  mensaje: string
+}
+
 /** Las opciones del desplegable "¿Cómo conoció la oferta?" (mismas etiquetas que el back). */
 export const OPCIONES_COMO_CONOCIO: ReadonlyArray<{ valor: ComoConocio; etiqueta: string }> = [
   { valor: 'SITIO_WEB_UTN', etiqueta: 'Sitio web UTN FRLP' },
