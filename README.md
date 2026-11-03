@@ -25,8 +25,10 @@
 |---|---|---|
 | Git | cualquiera | Clonar el repo |
 | Docker Desktop (con Compose v2) | actual | Levanta todo con un solo comando |
+| Node.js | **22.22 o más nuevo** | Solo si corrés el front fuera de Docker |
 | uv | actual | Solo si corrés el back o los tests fuera de Docker. Instala Python 3.12 si no lo tenés |
 
+- **Node en Windows:** `winget install OpenJS.NodeJS.22`. React Router 8 exige Node 22.22 o más nuevo: con una 22 más vieja, `npm` avisa `EBADENGINE`.
 - **uv:** en Linux o macOS `curl -LsSf https://astral.sh/uv/install.sh | sh`; en Windows `powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"`.
 
 ### Levantar todo con un comando
@@ -99,6 +101,42 @@ uv run python -m scripts.seed             # carga los datos de prueba (se puede 
 ```
 
 Las migraciones nuevas: `uv run alembic revision --autogenerate -m "descripcion"`. Ojo: Alembic **no detecta los cambios en los `CHECK`**; esos hay que escribirlos a mano en la migración.
+
+### Correr el back o el front fuera de Docker
+
+**Back** (si el back de Docker está corriendo, frenalo antes con `docker compose stop backend`: usa el mismo puerto 8000):
+```bash
+docker compose up -d db mailhog
+cd backend
+uv sync
+uv run alembic upgrade head
+uv run python -m scripts.seed
+uv run uvicorn main:app --reload          # http://localhost:8000
+```
+
+**Front:**
+```bash
+docker compose stop frontend              # libera el puerto 3000
+cd frontend
+npm install
+npm run dev                               # http://localhost:3000
+npm run lint && npm run build             # lo mismo que corre el CI
+```
+
+Con `npm run dev` el proxy de Vite manda `/api` a `http://localhost:8000`, es decir, al back de Docker (o al que tengas corriendo en tu máquina). La variable `VITE_PROXY_TARGET` del `.env` **no** tiene efecto: Vite la lee del entorno del proceso, no de ese archivo. Para apuntar a otro back: `VITE_PROXY_TARGET=http://localhost:9000 npm run dev` (en PowerShell: `$env:VITE_PROXY_TARGET="http://localhost:9000"; npm run dev`).
+
+---
+
+## Si algo falla
+
+| Síntoma | Causa y solución |
+|---|---|
+| `npm` avisa `EBADENGINE` o el front no arranca | Tenés una Node más vieja que 22.22. En Windows: `winget install OpenJS.NodeJS.22`. |
+| El back dice «la autentificación password falló para el usuario postgrado_user» | Hay **otro PostgreSQL ocupando el puerto 5432** y el back se conecta a ese en vez de al contenedor. Es común en Windows, donde el instalador de PostgreSQL deja un servicio (`postgresql-x64-NN`). Dos salidas: **a)** frenarlo, en PowerShell como administrador: `Stop-Service postgresql-x64-NN`; **b)** mover la base del TP a otro puerto: en el `.env` poné `DB_PORT=5433` y cambiá el `5432` por `5433` en `DATABASE_URL` y `TEST_DATABASE_URL`. El compose ya usa `${DB_PORT}`. |
+| `port is already allocated` o `address already in use` | Otro programa o un contenedor de otra materia usa el 3000, 8000, 5432, 1025 u 8025. Con `docker ps` ves qué contenedores están corriendo; frenalos con `docker stop <nombre>`. |
+| `failed to connect to the docker API` | Docker Desktop no está abierto. Abrilo y esperá a que diga que el motor está corriendo. |
+| Al correr el back fuera de Docker falla con `ValidationError ... jwt_secret` | Falta el `.env` en la raíz del repo o su `JWT_SECRET` tiene menos de 32 caracteres. Copiá `.env.example` otra vez. (Con Docker no pasa: el compose trae un valor de desarrollo.) |
+| Querés empezar de cero | `docker compose down -v` y después `docker compose up --build`. |
 
 ---
 
