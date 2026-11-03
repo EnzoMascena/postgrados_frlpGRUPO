@@ -1,142 +1,98 @@
-# CI/CD Pipeline — Fenix Posgrado
-# Se ejecuta en: cada Push a develop/main, cada Pull Request a develop/main
-# Objetivo: Garantizar que el código que llega a las ramas principales no rompe nada
+# CI del Sistema de Posgrado UTN FRLP (US-TECH-001).
+#
+# Corre en cada push y PR a develop y main. Los nombres de los jobs (`backend` y `frontend`) son
+# fijos: son los checks obligatorios de la protección de develop y main.
+# Sin `paths:` a propósito: con checks obligatorios, un PR que no toca el back quedaría esperando
+# un check que nunca corre.
 
-name: CI Pipeline
+name: CI
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main, develop]
   pull_request:
-    branches: [ main, develop ]
+    branches: [main, develop]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Un push nuevo a la misma rama cancela la corrida anterior.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  # ──────────────────────────────────────────
-  # JOB 1: Calidad de código (Lint)
-  # ──────────────────────────────────────────
-  lint:
-    name: Linting y Formato
+  backend:
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: src/core/package-lock.json
-
-      - name: Instalar dependencias (Backend)
-        working-directory: src/core
-        run: npm ci
-
-      - name: Ejecutar ESLint (Backend)
-        working-directory: src/core
-        run: npm run lint
-
-      - name: Verificar formato (Prettier)
-        working-directory: src/core
-        run: npm run format:check
-
-      - name: Instalar dependencias (Frontend)
-        working-directory: src/frontend
-        run: npm ci
-
-      - name: Ejecutar ESLint (Frontend)
-        working-directory: src/frontend
-        run: npm run lint
-
-  # ──────────────────────────────────────────
-  # JOB 2: Tests con cobertura
-  # ──────────────────────────────────────────
-  test:
-    name: Tests Unitarios y Cobertura
-    runs-on: ubuntu-latest
-    needs: lint  # Solo corre si el lint pasa
-    
+    defaults:
+      run:
+        working-directory: backend
     services:
-      postgres:
-        image: postgres:15-alpine
+      # Los mismos datos que los defaults de src/shared/config.py: no hace falta pasar las URLs.
+      db:
+        image: postgres:16-alpine
         env:
-          POSTGRES_USER: test_user
-          POSTGRES_PASSWORD: test_password
-          POSTGRES_DB: fenix_test
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+          POSTGRES_USER: postgrado_user
+          POSTGRES_PASSWORD: postgrado_dev_password
+          POSTGRES_DB: postgrado_dev
         ports:
           - 5432:5432
-
+        options: >-
+          --health-cmd "pg_isready -U postgrado_user -d postgrado_dev"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      # config.py no tiene default para el secreto. Este solo vale para el CI, no es uno real.
+      JWT_SECRET: secreto-solo-para-el-ci-de-32-o-mas-caracteres
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: astral-sh/setup-uv@v7
         with:
-          node-version: '20'
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
 
       - name: Instalar dependencias
-        working-directory: src/core
+        run: uv sync --locked
+
+      - name: Lint
+        run: uv run ruff check .
+
+      - name: Formato
+        run: uv run ruff format --check .
+
+      - name: Migraciones
+        run: uv run alembic upgrade head
+
+      # Falla si alguien cambió un modelo sin su migración.
+      - name: Modelos sin migración
+        run: uv run alembic check
+
+      # La cobertura mínima (70%) sale de fail_under en pyproject.toml.
+      - name: Tests con cobertura
+        run: uv run pytest --cov
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Instalar dependencias
         run: npm ci
 
-      - name: Ejecutar migraciones de test
-        working-directory: src/core
-        env:
-          DATABASE_URL: postgresql://test_user:test_password@localhost:5432/fenix_test
-        run: npm run db:migrate
+      - name: Lint
+        run: npm run lint
 
-      - name: Ejecutar tests con cobertura
-        working-directory: src/core
-        env:
-          DATABASE_URL: postgresql://test_user:test_password@localhost:5432/fenix_test
-          JWT_SECRET: test-secret-for-ci
-          STORAGE_PATH: /tmp/fenix-test-storage
-        run: npm run test:coverage
-
-      - name: Verificar umbral de cobertura (≥70%)
-        working-directory: src/core
-        run: npm run test:coverage:check
-
-      - name: Subir reporte de cobertura
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: coverage-report
-          path: src/core/coverage/
-
-  # ──────────────────────────────────────────
-  # JOB 3: Build
-  # ──────────────────────────────────────────
-  build:
-    name: Build de Producción
-    runs-on: ubuntu-latest
-    needs: test
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Build Backend
-        working-directory: src/core
-        run: |
-          npm ci
-          npm run build
-
-      - name: Build Frontend
-        working-directory: src/frontend
-        env:
-          VITE_API_URL: https://fenix.example.com/api/v1
-        run: |
-          npm ci
-          npm run build
-
-      - name: Verificar que el build no tiene warnings críticos
-        working-directory: src/frontend
-        run: echo "Build exitoso sin errores"
+      - name: Build
+        run: npm run build

@@ -14,6 +14,26 @@ Este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 ### Added
 - Estructura inicial del repositorio
 - Documentación base: SRS, PRD, BFD, Arquitectura, Cronograma
+- Plan del Módulo Core con alcance, reparto, contrato de la API y modelo de datos
+- Esqueleto del backend en FastAPI con Clean Architecture: configuración por variables de entorno, errores uniformes, headers de seguridad y health check
+- Entorno de desarrollo con PostgreSQL 16 y MailHog en `docker-compose.yml`, y tests de integración con rollback por test
+- Base del front para conectarse a la API: rutas con React Router y layouts público y del coordinador, cliente HTTP con el formato de errores del plan, sesión del coordinador con rutas protegidas por rol, catálogos de cohortes y carreras, y los componentes Modal, Alerta, EstadoBadge y Cargando
+- Modelo de datos del Core (8 tablas con sus restricciones), migración inicial con Alembic, fábricas de datos para los tests y ADR-006 (carreras por legajo)
+- Login del coordinador con JWT de 8 horas y contraseñas con bcrypt, y control de acceso por rol (`require_role`) para los endpoints protegidos (ADR-003)
+- Plantillas HTML de los 6 emails del core (Jinja2, estilos en línea, logo como `cid:logo-utn`), con sus tests y un script de vista previa
+- `docker compose up --build` levanta front, API, base y MailHog; el back migra y carga el seed al arrancar
+- Requisitos de documentos del aspirante: qué corresponde según beca y título de posgrado, checklist de cargados y pendientes, y el error `DOCUMENTOS_FALTANTES` que frena el envío
+- Envío de emails con `enviar_email`: arma el HTML desde las plantillas, embebe el logo de la UTN y lo manda por SMTP (MailHog en desarrollo), con una bandeja de prueba para los tests
+- Período de inscripción por cohorte: `GET /cohortes` y `GET /carreras` públicos para el formulario, y `PATCH /cohortes/{id}/inscripcion` para que el coordinador abra o cierre la inscripción con la próxima apertura
+- Máquina de estados del legajo: tabla de transiciones por rol con las acciones permitidas en cada estado, número de legajo `AA-CCC-SSS` y regla de vencimiento de la reserva a los 30 días (BR-005), documentada en el ADR-004
+- Seed idempotente de datos de prueba (`uv run python -m scripts.seed`): 3 carreras, 3 cohortes, el coordinador con la clave de la configuración y 11 legajos con su historial, uno de ellos COMPLETADO hace 31 días para mostrar el vencimiento en la demo
+- Login del coordinador conectado a la API: errores del back en pantalla, "Recordarme", aviso de sesión vencida, rutas del coordinador protegidas por rol y cierre de sesión
+- README con cómo levantar el proyecto (URLs, usuario de prueba, comandos del día a día y problemas comunes en Windows), ADR-001 del stack y la forma de vincular un PR con su issue (`Closes #N`) en CONTRIBUTING
+- Retro del hito 1 en `docs/retros/2026-11-01.md`
+
+### Changed
+- `docker-compose.yml` y `.env.example` reemplazan las plantillas viejas de Node
+- El CI reemplaza el pipeline de Node por ruff, Alembic y pytest con PostgreSQL 16 en el back, y lint y build en el front
 
 ---
 

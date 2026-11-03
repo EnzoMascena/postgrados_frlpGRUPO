@@ -1,0 +1,25 @@
+{#
+  rechazo.html — al RECHAZAR.
+  Variables: nombre, comentario (puede venir vacío; si viene, se escapa
+  sola, sin el filtro safe).
+#}
+{% extends "base.html" %}
+
+{% block titulo %}Resultado de tu preinscripción{% endblock %}
+
+{% block preheader %}La Secretaría de Posgrado terminó de revisar tu preinscripción.{% endblock %}
+
+{% block contenido %}
+<h1 style="margin:0 0 16px; font-size:22px; line-height:1.3; color:#1E293B;">Resultado de tu preinscripción</h1>
+<p style="margin:0 0 16px;">Hola {{ nombre }}:</p>
+<p style="margin:0 0 16px;">La Secretaría de Posgrado revisó tu preinscripción y en esta oportunidad no fue aceptada.</p>
+{% if comentario %}
+<p style="margin:0 0 8px;">El motivo que dejó la Secretaría:</p>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 16px;">
+  <tr>
+    <td style="background-color:#F8FAFC; border-left:4px solid #CBD5E1; border-radius:6px; padding:16px; white-space:pre-line; color:#1E293B;">{{ comentario }}</td>
+  </tr>
+</table>
+{% endif %}
+<p style="margin:0;">Si tenés dudas, podés consultar en la Secretaría de Posgrado de la UTN Facultad Regional La Plata.</p>
+{% endblock %}

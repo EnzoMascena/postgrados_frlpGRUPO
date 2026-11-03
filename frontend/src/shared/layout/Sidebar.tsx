@@ -7,24 +7,27 @@
    POR PERFIL DE USUARIO, que son los tres actores del sistema:
 
      · ASPIRANTE  → Inscripción
-     · CONDUCCIÓN → Dashboard, Legajo, Estadísticas
+     · CONDUCCIÓN → Dashboard, Legajo académico, Estadísticas
      · DOCENTES   → Planilla
 
    Esa agrupación es la que definimos en el análisis de requisitos:
-   cada perfil ve las funciones que le corresponden. En la versión
-   final, según con qué usuario inicie sesión, se le van a mostrar
-   solo sus grupos.
+   cada perfil ve las funciones que le corresponden. Las pantallas
+   que todavía usan datos de prueba (módulos B, C y D) dicen
+   "(demo)" para que nadie las confunda con datos reales.
 
    TÉCNICAMENTE: el menú no está escrito a mano en el HTML. Está
    definido como una lista de datos (la constante `groups` de acá
    abajo) y se dibuja recorriéndola con .map(). Agregar una
    pantalla nueva = agregar un renglón a esa lista.
 
-   Marca en negrita la opción activa comparando `active` con el id
-   de cada ítem, y al hacer click avisa a App con onNavigate.
+   CONCEPTO CLAVE — <NavLink>:
+   Es un link de React Router que sabe si su dirección es la URL
+   actual (`isActive`) y con eso se pinta resaltado. Antes App le
+   pasaba al Sidebar la pantalla activa por props; ahora la URL es
+   la única fuente de verdad y el Sidebar no recibe nada.
    ═══════════════════════════════════════════════════════════════ */
 
-import type { Screen } from '../../App'
+import { NavLink } from 'react-router'
 import {
   IconClipboardList,
   IconLayoutDashboard,
@@ -34,8 +37,9 @@ import {
   IconLogout,
 } from '@tabler/icons-react'
 import type { ElementType } from 'react'
+import { useAuth } from '../auth/useAuth'
 
-type NavItem = { id: Screen; label: string; icon: ElementType }
+type NavItem = { to: string; label: string; icon: ElementType; demo?: boolean }
 type NavGroup = { label: string; items: NavItem[] }
 
 // El menú COMO DATO: los tres perfiles y sus pantallas.
@@ -43,35 +47,37 @@ type NavGroup = { label: string; items: NavItem[] }
 const groups: NavGroup[] = [
   {
     label: 'Aspirante',
-    items: [{ id: 'inscripcion', label: 'Inscripción', icon: IconClipboardList }],
+    items: [{ to: '/inscripcion', label: 'Inscripción', icon: IconClipboardList }],
   },
   {
     label: 'Conducción',
     items: [
-      { id: 'dashboard', label: 'Dashboard', icon: IconLayoutDashboard },
-      { id: 'legajo', label: 'Legajo', icon: IconUserCircle },
-      { id: 'estadisticas', label: 'Estadísticas', icon: IconChartBar },
+      { to: '/coordinador', label: 'Dashboard', icon: IconLayoutDashboard },
+      { to: '/coordinador/legajo-academico', label: 'Legajo académico', icon: IconUserCircle, demo: true },
+      { to: '/coordinador/estadisticas', label: 'Estadísticas', icon: IconChartBar, demo: true },
     ],
   },
   {
     label: 'Docentes',
-    items: [{ id: 'planilla', label: 'Planilla', icon: IconTable }],
+    items: [{ to: '/coordinador/planilla', label: 'Planilla', icon: IconTable, demo: true }],
   },
 ]
 
-type Props = {
-  active: Screen
-  onNavigate: (screen: Screen) => void
-  onLogout: () => void
-}
+export default function Sidebar() {
+  const { usuario, cerrarSesion } = useAuth()
 
-export default function Sidebar({ active, onNavigate, onLogout }: Props) {
   return (
     <aside className="w-60 flex-shrink-0 bg-sidebar flex flex-col py-3 overflow-y-auto">
-      {/* Logo */}
+      {/* Logo y quién inició sesión */}
       <div className="px-4 pb-4 mb-2 border-b border-white/10">
         <div className="text-[11px] uppercase tracking-wide text-faint">UTN · FRLP</div>
         <div className="text-[13px] font-medium text-on-dark">Sistema Posgrado</div>
+        {usuario && (
+          <div className="mt-3 min-w-0">
+            <div className="text-[12.5px] text-on-dark truncate">{usuario.nombre}</div>
+            <div className="text-[11px] text-faint truncate">{usuario.email}</div>
+          </div>
+        )}
       </div>
 
       {/* Grupos de navegación */}
@@ -83,12 +89,15 @@ export default function Sidebar({ active, onNavigate, onLogout }: Props) {
 
           {group.items.map((item) => {
             const Icon = item.icon
-            const isActive = active === item.id
             return (
-              <button
-                key={item.id}
-                onClick={() => onNavigate(item.id)}
-                className={
+              // `end`: solo está activo si la URL es exactamente esa.
+              // Sin él, "Dashboard" (/coordinador) quedaría resaltado
+              // también en /coordinador/estadisticas.
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end
+                className={({ isActive }) =>
                   'w-full flex items-center gap-2 px-2 py-[7px] rounded-input text-[12.5px] transition-colors ' +
                   (isActive
                     ? 'bg-sidebar-active text-on-dark font-medium'
@@ -97,26 +106,24 @@ export default function Sidebar({ active, onNavigate, onLogout }: Props) {
               >
                 <Icon size={15} stroke={1.5} className="flex-shrink-0" />
                 {item.label}
-              </button>
+                {item.demo && ' (demo)'}
+              </NavLink>
             )
           })}
         </div>
       ))}
 
-      {/* Pie del menú: cerrar sesión y el indicador con el punto
-          verde que avisa si la inscripción está abierta. */}
+      {/* Pie del menú: cerrar sesión. Borra el token y los datos en
+          caché; como /coordinador está protegida, RutaProtegida ve
+          que ya no hay usuario y manda al login. */}
       <div className="mt-auto px-2 pt-2 border-t border-white/10">
         <button
-          onClick={onLogout}
+          onClick={cerrarSesion}
           className="w-full flex items-center gap-2 px-2 py-[7px] rounded-input text-[12.5px] text-faint hover:bg-sidebar-active hover:text-on-dark transition-colors"
         >
           <IconLogout size={15} stroke={1.5} className="flex-shrink-0" />
           Cerrar sesión
         </button>
-        <div className="flex items-center gap-1.5 text-[11px] text-faint px-2 pt-2 mt-1 border-t border-white/10">
-          <span className="w-2 h-2 rounded-full bg-[#22c55e] flex-shrink-0" />
-          Período abierto
-        </div>
       </div>
     </aside>
   )

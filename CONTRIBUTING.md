@@ -94,7 +94,7 @@ antes de almacenarlo, independientemente del Content-Type del cliente.
 [Descripción de qué implementa en 2-3 oraciones]
 
 ## Historia de usuario
-Cierra #[número de issue en GitHub] — US-CORE-001
+Closes #[número de issue en GitHub] — US-CORE-001
 
 ## Cambios principales
 - [Lista de cambios relevantes]
@@ -115,6 +115,14 @@ Cierra #[número de issue en GitHub] — US-CORE-001
 - [ ] Probado en la máquina de otro integrante
 - [ ] CHANGELOG.md actualizado
 ```
+
+### Cómo vincular el PR con su issue
+
+GitHub solo reconoce las palabras clave **en inglés** (`Closes`, `Fixes`, `Resolves`). Con «Cierra #23» el PR no queda vinculado al issue.
+
+- **Si el PR completa la historia:** escribí `Closes #N — US-XXX-NNN`.
+- **Si es solo una parte** (la historia se completa con otros PRs): escribí `Parte de #N — US-XXX-NNN`. Esa frase **no vincula** nada, así que enlazá el issue a mano desde **Development** (el panel de la derecha del PR).
+- **El issue se cierra recién cuando el cambio llega a `main`**, que es la rama por defecto del repo: al mergear el PR a `develop` queda abierto, aunque esté vinculado. Para que se cierre, el PR de `develop` a `main` del release lista los `Closes #N` de las historias que incluye.
 
 ### Code Review: qué revisar
 
