@@ -29,6 +29,7 @@ Este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 - Seed idempotente de datos de prueba (`uv run python -m scripts.seed`): 3 carreras, 3 cohortes, el coordinador con la clave de la configuración y 11 legajos con su historial, uno de ellos COMPLETADO hace 31 días para mostrar el vencimiento en la demo
 - Login del coordinador conectado a la API: errores del back en pantalla, "Recordarme", aviso de sesión vencida, rutas del coordinador protegidas por rol y cierre de sesión
 - README con cómo levantar el proyecto (URLs, usuario de prueba, comandos del día a día y problemas comunes en Windows), ADR-001 del stack y la forma de vincular un PR con su issue (`Closes #N`) en CONTRIBUTING
+- Formulario de inscripción conectado a la API: validación en tiempo real, guarda el borrador con `POST /legajos`, muestra los errores del back al lado de cada campo y permite pedir un link nuevo
 
 ### Changed
 - `docker-compose.yml` y `.env.example` reemplazan las plantillas viejas de Node
