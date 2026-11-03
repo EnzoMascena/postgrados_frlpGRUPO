@@ -72,6 +72,12 @@ services:
       VITE_USE_POLLING: "true"
     ports:
       - "3000:3000"
+    # El código se monta en vivo: Vite (con polling) recarga el navegador sin rebuild.
+    # Si cambia package.json: docker compose up -d --build -V frontend
+    # (-V recrea el volumen de node_modules; si no, quedan los paquetes viejos).
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules # usa los paquetes de la imagen (Linux), no los de la máquina
     depends_on:
       backend:
         condition: service_healthy
