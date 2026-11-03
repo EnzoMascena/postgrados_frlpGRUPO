@@ -33,6 +33,7 @@ Este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 ### Changed
 - `docker-compose.yml` y `.env.example` reemplazan las plantillas viejas de Node
 - El CI reemplaza el pipeline de Node por ruff, Alembic y pytest con PostgreSQL 16 en el back, y lint y build en el front
+- El seed valida cada paso del historial con la máquina de estados del legajo y arma los números con `generar_numero_legajo`; la etiqueta "Constancia de CUIT / CUIL" del front ahora coincide con la del back
 
 ---
 
