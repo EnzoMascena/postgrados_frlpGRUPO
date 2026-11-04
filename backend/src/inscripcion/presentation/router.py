@@ -4,7 +4,7 @@ from datetime import date
 from functools import partial
 from typing import Any
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, BackgroundTasks, Depends, status
 from sqlmodel import Session
 
 from src.inscripcion.application.inscribir import MENSAJE_CARRERA_NO_DISPONIBLE, inscribir
@@ -46,6 +46,14 @@ def _error(status: int, codigo: str, mensaje: str, campo: str | None = None) -> 
     """Un error de ejemplo para Swagger."""
     ejemplo = _cuerpo_de_error(status, codigo, mensaje, campo)
     return {"content": {"application/json": {"example": ejemplo}}}
+
+
+def _enviar_despues(
+    tareas: BackgroundTasks, destinatario: str, nombre: str, codigo: str, token: str
+) -> bool:
+    """Deja el email para después de responder. Devuelve `True`: queda en cola, no sabe si salió."""
+    tareas.add_task(enviar_link_de_seguimiento, destinatario, nombre, codigo, token)
+    return True
 
 
 @router.post(
@@ -116,7 +124,8 @@ def crear_legajo(
     description=(
         "Público. Si hay una preinscripción con ese email, manda un link nuevo de la más "
         "reciente. Responde siempre lo mismo, exista o no el email, para no revelar quién se "
-        "inscribió. Los links anteriores siguen andando hasta que vencen."
+        "inscribió. El email se manda después de responder, así que el aspirante no espera al "
+        "servidor de correo. Los links anteriores siguen andando hasta que vencen."
     ),
     responses={
         422: {
@@ -126,12 +135,14 @@ def crear_legajo(
     },
 )
 def pedir_link_nuevo(
-    datos: RecuperarAccesoRequest, session: Session = Depends(get_session)
+    datos: RecuperarAccesoRequest,
+    tareas: BackgroundTasks,
+    session: Session = Depends(get_session),
 ) -> RecuperarAccesoResponse:
     recuperar_acceso(
         datos.email,
         PgInscripcionRepository(session),
         partial(crear_link_seguimiento, session),
-        enviar_link_de_seguimiento,
+        partial(_enviar_despues, tareas),
     )
     return RecuperarAccesoResponse(mensaje=MENSAJE_RECUPERAR_ACCESO)

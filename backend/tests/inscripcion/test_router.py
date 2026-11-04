@@ -1,14 +1,17 @@
 """`POST /legajos`, `POST /legajos/recuperar-acceso` y el link de seguimiento, contra la app real
 y la base de test."""
 
+import asyncio
 import hashlib
 import re
 from datetime import date, timedelta
 from uuid import uuid4
 
 import pytest
+from fastapi import BackgroundTasks
 from sqlmodel import select
 
+from src.inscripcion.application.recuperar_acceso import MENSAJE_RECUPERAR_ACCESO
 from src.inscripcion.domain.inscripcion import (
     MENSAJE_DNI_REPETIDO,
     MENSAJE_EMAIL_REPETIDO,
@@ -18,7 +21,8 @@ from src.inscripcion.infrastructure.links import crear_link_seguimiento
 from src.inscripcion.infrastructure.orm_models import TokenSeguimientoORM
 from src.inscripcion.infrastructure.pg_repository import PgInscripcionRepository
 from src.inscripcion.presentation.dependencies import legajo_id_desde_token
-from src.inscripcion.presentation.schemas import InscripcionRequest
+from src.inscripcion.presentation.router import pedir_link_nuevo
+from src.inscripcion.presentation.schemas import InscripcionRequest, RecuperarAccesoRequest
 from src.legajos.infrastructure.orm_models import LegajoCarreraORM, LegajoORM
 from src.shared.config import settings
 from src.shared.errors import Conflicto, NoEncontrado
@@ -298,6 +302,23 @@ def test_recuperar_acceso_manda_un_link_nuevo_que_sirve(client, session, formula
     legajo = legajos_guardados(session)[0]
     assert legajo_id_desde_token(token, session) == legajo.id
     assert len(session.exec(select(TokenSeguimientoORM)).all()) == 2
+
+
+def test_recuperar_acceso_deja_el_email_para_despues_de_responder(
+    session, cohorte, carrera, bandeja
+):
+    # Armar y mandar el email es lo más lento del request: si saliera dentro de él, la demora
+    # delataría que el email existe. Se llama a la función directo porque TestClient corre las
+    # tareas antes de devolver la respuesta y no deja ver la diferencia.
+    crear_legajo(session, cohorte, [carrera], email="ana@example.com")
+    tareas = BackgroundTasks()
+
+    respuesta = pedir_link_nuevo(RecuperarAccesoRequest(email="ana@example.com"), tareas, session)
+
+    assert respuesta.mensaje == MENSAJE_RECUPERAR_ACCESO
+    assert bandeja == []
+    asyncio.run(tareas())  # lo que hace Starlette una vez enviada la respuesta
+    assert [email.destinatario for email in bandeja] == ["ana@example.com"]
 
 
 def test_recuperar_acceso_usa_el_legajo_mas_reciente(client, session, formulario, bandeja):
