@@ -29,6 +29,7 @@ Este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 - Seed idempotente de datos de prueba (`uv run python -m scripts.seed`): 3 carreras, 3 cohortes, el coordinador con la clave de la configuración y 11 legajos con su historial, uno de ellos COMPLETADO hace 31 días para mostrar el vencimiento en la demo
 - Login del coordinador conectado a la API: errores del back en pantalla, "Recordarme", aviso de sesión vencida, rutas del coordinador protegidas por rol y cierre de sesión
 - README con cómo levantar el proyecto (URLs, usuario de prueba, comandos del día a día y problemas comunes en Windows), ADR-001 del stack y la forma de vincular un PR con su issue (`Closes #N`) en CONTRIBUTING
+- Inscripción del aspirante: `POST /legajos` crea el legajo en BORRADOR con su código de seguimiento y manda por email el link para continuar, y `POST /legajos/recuperar-acceso` manda uno nuevo; el link lleva un token de 32 bytes guardado como SHA-256 que vence a los 60 días (ADR-005)
 - Formulario de inscripción conectado a la API: validación en tiempo real, guarda el borrador con `POST /legajos`, muestra los errores del back al lado de cada campo y permite pedir un link nuevo
 - Retro del hito 1 en `docs/retros/2026-11-01.md`
 - Cambio de estado del legajo con `ServicioEstados`: valida la transición, genera el número de legajo sin repetirlo, guarda la auditoría y manda el email de cada acción (incluido el aviso de vencimiento a los coordinadores). Detalle del legajo con checklist de documentos, historial y acciones permitidas: `GET /legajos/{id}` y `PATCH /legajos/{id}/estado` para el coordinador
@@ -36,6 +37,7 @@ Este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 ### Changed
 - `docker-compose.yml` y `.env.example` reemplazan las plantillas viejas de Node
 - El CI reemplaza el pipeline de Node por ruff, Alembic y pytest con PostgreSQL 16 en el back, y lint y build en el front
+- En `docker compose`, el front monta el código y recarga solo al guardar, y el back corre el seed siempre al arrancar (ya sin el `if` provisorio)
 - El seed valida cada paso del historial con la máquina de estados del legajo y arma los números con `generar_numero_legajo`; la etiqueta "Constancia de CUIT / CUIL" del front ahora coincide con la del back
 
 ---
