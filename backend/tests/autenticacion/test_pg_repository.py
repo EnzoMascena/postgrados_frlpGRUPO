@@ -51,3 +51,23 @@ def test_un_usuario_inactivo_se_devuelve_igual_con_activo_falso(session, fila):
     session.commit()
 
     assert PgUsuarioRepository(session).buscar_por_email("coord@example.com").activo is False
+
+
+def test_activos_con_rol_trae_solo_los_activos_de_ese_rol_ordenados_por_email(session, fila):
+    crear_usuario(session, email="beta@example.com", rol=Rol.COORDINADOR)
+    crear_usuario(session, email="alfa@example.com", rol=Rol.COORDINADOR)
+    crear_usuario(session, email="inactivo@example.com", rol=Rol.COORDINADOR, activo=False)
+    crear_usuario(session, email="docente@example.com", rol=Rol.DOCENTE)
+
+    usuarios = PgUsuarioRepository(session).activos_con_rol(Rol.COORDINADOR)
+
+    assert [usuario.email for usuario in usuarios] == [
+        "alfa@example.com",
+        "beta@example.com",
+        "coord@example.com",
+    ]
+    assert all(isinstance(usuario, Usuario) for usuario in usuarios)
+
+
+def test_activos_con_rol_sin_ninguno_devuelve_lista_vacia(session, fila):
+    assert PgUsuarioRepository(session).activos_con_rol(Rol.CPR) == []

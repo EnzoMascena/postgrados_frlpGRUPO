@@ -17,14 +17,20 @@ import secrets
 from dataclasses import dataclass
 from datetime import UTC, date, datetime, time, timedelta
 from pathlib import Path
-from typing import Any
+from typing import Any, NamedTuple
 
 from sqlmodel import Session, SQLModel, select
 
 from src.autenticacion.infrastructure.hashing import hashear_password
 from src.autenticacion.infrastructure.orm_models import UsuarioORM
 from src.cohortes.infrastructure.orm_models import CarreraORM, CohorteORM
-from src.legajos.domain.estados import EstadoLegajo
+from src.legajos.domain.estados import (
+    Accion,
+    EstadoLegajo,
+    validar_comentario,
+    validar_transicion,
+)
+from src.legajos.domain.numero_legajo import generar_numero_legajo
 from src.legajos.infrastructure.orm_models import (
     AuditoriaLegajoORM,
     LegajoCarreraORM,
@@ -65,28 +71,34 @@ CAMPOS_DEL_JSON = (
 
 @dataclass(frozen=True)
 class Paso:
-    """Un cambio de estado del historial, `dias` después de la inscripción."""
+    """Una acción del historial, quién la hizo y `dias` después de la inscripción.
 
-    accion: str
-    desde: EstadoLegajo
-    hacia: EstadoLegajo
+    Desde qué estado sale y a cuál llega no se escribe acá: lo dice la máquina de estados del
+    legajo cuando `_historial` recorre el camino.
+    """
+
+    accion: Accion
     rol: Rol
     dias: int
     comentario: str | None = None
 
 
-ENVIAR = Paso("ENVIAR", EstadoLegajo.BORRADOR, EstadoLegajo.PENDIENTE, Rol.ASPIRANTE, 0)
-REVISAR = Paso("REVISAR", EstadoLegajo.PENDIENTE, EstadoLegajo.EN_REVISION, Rol.COORDINADOR, 2)
+class CambioDeEstado(NamedTuple):
+    """Un paso ya validado por la máquina de estados: una fila de la auditoría del legajo."""
+
+    paso: Paso
+    desde: EstadoLegajo
+    hacia: EstadoLegajo
+    fecha: datetime
+
+
+ENVIAR = Paso(Accion.ENVIAR, Rol.ASPIRANTE, 0)
+REVISAR = Paso(Accion.REVISAR, Rol.COORDINADOR, 2)
 OBSERVAR = Paso(
-    "OBSERVAR",
-    EstadoLegajo.EN_REVISION,
-    EstadoLegajo.OBSERVADO,
-    Rol.COORDINADOR,
-    5,
-    "Falta la copia del título de grado legalizada",
+    Accion.OBSERVAR, Rol.COORDINADOR, 5, "Falta la copia del título de grado legalizada"
 )
-APROBAR = Paso("APROBAR", EstadoLegajo.EN_REVISION, EstadoLegajo.COMPLETADO, Rol.COORDINADOR, 5)
-MATRICULAR = Paso("MATRICULAR", EstadoLegajo.COMPLETADO, EstadoLegajo.ACTIVO, Rol.COORDINADOR, 12)
+APROBAR = Paso(Accion.APROBAR, Rol.COORDINADOR, 5)
+MATRICULAR = Paso(Accion.MATRICULAR, Rol.COORDINADOR, 12)
 
 # El camino que hizo cada legajo hasta su estado actual: una fila de auditoría por paso, así el
 # historial del detalle no queda vacío. El BORRADOR no tiene pasos: todavía no lo envió.
@@ -101,9 +113,9 @@ CAMINOS: dict[EstadoLegajo, list[Paso]] = {
 
 # La fecha que guarda el legajo cuando pasa por cada acción.
 FECHA_DE_LA_ACCION = {
-    "ENVIAR": "fecha_inscripcion",
-    "APROBAR": "fecha_aprobacion",
-    "MATRICULAR": "fecha_activacion",
+    Accion.ENVIAR: "fecha_inscripcion",
+    Accion.APROBAR: "fecha_aprobacion",
+    Accion.MATRICULAR: "fecha_activacion",
 }
 
 
@@ -120,9 +132,25 @@ def _obtener_o_crear[T: SQLModel](
     return fila, True
 
 
-def _numero_de_legajo(cohorte: CohorteORM, secuencial: int) -> str:
-    # AA-CCC-SSS: año en dos dígitos, número de cohorte y secuencial (plan §9). Ej.: 26-001-001.
-    return f"{cohorte.anio % 100:02d}-{cohorte.numero:03d}-{secuencial:03d}"
+def _historial(estado: EstadoLegajo, comienzo: datetime) -> list[CambioDeEstado]:
+    """Recorre el camino de `estado` desde BORRADOR con la máquina de estados del legajo.
+
+    Cada paso pasa por `validar_comentario` y `validar_transicion`, como en la API, y el estado
+    al que llega es el desde del siguiente. Si el camino tiene una transición que la máquina no
+    permite, o no termina en `estado`, el seed falla y `main()` no llega a commitear nada.
+    """
+    historial = []
+    actual = EstadoLegajo.BORRADOR
+    for paso in CAMINOS[estado]:
+        validar_comentario(paso.accion, paso.comentario)
+        siguiente = validar_transicion(actual, paso.accion, paso.rol)
+        historial.append(
+            CambioDeEstado(paso, actual, siguiente, comienzo + timedelta(days=paso.dias))
+        )
+        actual = siguiente
+    if actual != estado:
+        raise RuntimeError(f"El camino del seed para {estado} termina en {actual}")
+    return historial
 
 
 def _crear_legajo(
@@ -140,8 +168,12 @@ def _crear_legajo(
     formulario (todavía no tiene inscripción).
     """
     estado = EstadoLegajo(fila["estado"])
-    pasos = [(paso, comienzo + timedelta(days=paso.dias)) for paso in CAMINOS[estado]]
-    fechas = {FECHA_DE_LA_ACCION[p.accion]: f for p, f in pasos if p.accion in FECHA_DE_LA_ACCION}
+    historial = _historial(estado, comienzo)
+    fechas = {
+        FECHA_DE_LA_ACCION[cambio.paso.accion]: cambio.fecha
+        for cambio in historial
+        if cambio.paso.accion in FECHA_DE_LA_ACCION
+    }
 
     usuario_del_email = fila["email"].split("@")[0]
     legajo = LegajoORM(
@@ -152,7 +184,7 @@ def _crear_legajo(
         nacionalidad="Argentina",
         email_alternativo=f"{usuario_del_email}.alternativo@example.com",
         created_at=comienzo - timedelta(hours=1),
-        updated_at=pasos[-1][1] if pasos else comienzo,
+        updated_at=historial[-1].fecha if historial else comienzo,
         **{campo: fila[campo] for campo in CAMPOS_DEL_JSON},
         **fechas,
     )
@@ -160,13 +192,13 @@ def _crear_legajo(
     session.flush()  # el legajo tiene que existir antes que sus carreras y su auditoría
 
     session.add(LegajoCarreraORM(legajo_id=legajo.id, orden=1, carrera_id=carrera.id))
-    for paso, fecha in pasos:
+    for paso, desde, hacia, fecha in historial:
         session.add(
             AuditoriaLegajoORM(
                 legajo_id=legajo.id,
-                accion=paso.accion,
-                estado_anterior=paso.desde.value,
-                estado_nuevo=paso.hacia.value,
+                accion=paso.accion.value,
+                estado_anterior=desde.value,
+                estado_nuevo=hacia.value,
                 comentario=paso.comentario,
                 rol=paso.rol.value,
                 usuario_email=email_coordinador if paso.rol == Rol.COORDINADOR else None,
@@ -230,8 +262,9 @@ def cargar_datos(session: Session) -> dict[str, int]:
     aspirantes = [*datos["aspirantes_cohorte_2026"], datos["aspirante_que_vence"]]
     for fila in aspirantes:
         estado = EstadoLegajo(fila["estado"])
-        aprobado = APROBAR in CAMINOS[estado]
-        numero = _numero_de_legajo(cohorte, next(secuenciales)) if aprobado else None
+        numero = None
+        if APROBAR in CAMINOS[estado]:  # el número se asigna al aprobar (plan §9)
+            numero = generar_numero_legajo(cohorte.anio, cohorte.numero, next(secuenciales))
 
         existe = session.exec(
             select(LegajoORM).where(

@@ -243,7 +243,7 @@ export const ETIQUETA_DOCUMENTO: Record<TipoDocumento, string> = {
   DNI: 'Copia del DNI o pasaporte',
   TITULO_GRADO: 'Copia del título de grado',
   PARTIDA: 'Partida de nacimiento',
-  CUIT_CUIL: 'Constancia de CUIT/CUIL',
+  CUIT_CUIL: 'Constancia de CUIT / CUIL',
   TITULO_POSGRADO: 'Copia del título de posgrado',
   FORM_BECA: 'Formulario de beca firmado',
 }
