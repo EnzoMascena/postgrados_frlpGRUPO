@@ -1,5 +1,6 @@
 """Endpoints públicos de la inscripción: `POST /legajos` y `POST /legajos/recuperar-acceso`."""
 
+from datetime import date
 from functools import partial
 from typing import Any
 
@@ -11,7 +12,7 @@ from src.inscripcion.application.recuperar_acceso import (
     MENSAJE_RECUPERAR_ACCESO,
     recuperar_acceso,
 )
-from src.inscripcion.domain.inscripcion import MENSAJE_DNI_REPETIDO
+from src.inscripcion.domain.inscripcion import MENSAJE_DNI_REPETIDO, mensaje_periodo_cerrado
 from src.inscripcion.infrastructure.links import (
     crear_link_seguimiento,
     enviar_link_de_seguimiento,
@@ -28,15 +29,22 @@ from src.shared.database import get_session
 router = APIRouter(prefix="/legajos", tags=["Inscripción"])
 
 
-def _error(status: int, codigo: str, mensaje: str, campo: str | None = None) -> dict[str, Any]:
-    """Un error de ejemplo para Swagger, con el formato de ARQUITECTURA §11.2."""
-    ejemplo = {
+def _cuerpo_de_error(
+    status: int, codigo: str, mensaje: str, campo: str | None = None
+) -> dict[str, Any]:
+    """El cuerpo de un error de ejemplo, con el formato de ARQUITECTURA §11.2."""
+    return {
         "statusCode": status,
         "error": codigo,
         "message": mensaje,
         "field": campo,
         "timestamp": "2026-11-03T14:20:00Z",
     }
+
+
+def _error(status: int, codigo: str, mensaje: str, campo: str | None = None) -> dict[str, Any]:
+    """Un error de ejemplo para Swagger."""
+    ejemplo = _cuerpo_de_error(status, codigo, mensaje, campo)
     return {"content": {"application/json": {"example": ejemplo}}}
 
 
@@ -49,7 +57,9 @@ def _error(status: int, codigo: str, mensaje: str, campo: str | None = None) -> 
         "Público: lo usa el formulario (NFR-S01). Crea el legajo en BORRADOR con un código de "
         "seguimiento y manda por email el link para seguir la inscripción, que vence a los 60 "
         "días (ADR-005). El `token` de la respuesta es el mismo del link: en la base se guarda "
-        "solo su hash. El DNI se guarda sin puntos ni espacios y los emails en minúsculas."
+        "solo su hash. El DNI se guarda sin puntos ni espacios y los emails en minúsculas.\n\n"
+        "Los ids del ejemplo son inventados y dan 422: para probar, sacá `cohorteId` de "
+        "`GET /cohortes` y `carreraIds` de `GET /carreras`."
     ),
     responses={
         409: {
@@ -57,7 +67,24 @@ def _error(status: int, codigo: str, mensaje: str, campo: str | None = None) -> 
                 "La cohorte tiene la inscripción cerrada (`PERIODO_CERRADO`), o el DNI o el email "
                 "ya están inscriptos en esa cohorte (`CONFLICT`, con `field`)"
             ),
-            **_error(409, "CONFLICT", MENSAJE_DNI_REPETIDO, "dni"),
+            "content": {
+                "application/json": {
+                    "examples": {
+                        "dni_repetido": {
+                            "summary": "El DNI ya está inscripto en la cohorte",
+                            "value": _cuerpo_de_error(409, "CONFLICT", MENSAJE_DNI_REPETIDO, "dni"),
+                        },
+                        "periodo_cerrado": {
+                            "summary": "La cohorte tiene la inscripción cerrada",
+                            "value": _cuerpo_de_error(
+                                409,
+                                "PERIODO_CERRADO",
+                                mensaje_periodo_cerrado(date(2027, 3, 1)),
+                            ),
+                        },
+                    }
+                }
+            },
         },
         422: {
             "description": (

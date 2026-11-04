@@ -350,3 +350,18 @@ def test_un_token_vencido_da_404(session, cohorte, carrera):
 
     with pytest.raises(NoEncontrado):
         legajo_id_desde_token(token, session)
+
+
+# --- Swagger ---
+
+
+def test_swagger_aclara_de_donde_salen_los_ids_y_da_los_dos_ejemplos_de_409(client):
+    documentacion = client.get("/api/openapi.json").json()["paths"][LEGAJOS]["post"]
+
+    assert "GET /cohortes" in documentacion["description"]
+    assert "GET /carreras" in documentacion["description"]
+    ejemplos = documentacion["responses"]["409"]["content"]["application/json"]["examples"]
+    assert {ejemplo["value"]["error"] for ejemplo in ejemplos.values()} == {
+        "CONFLICT",
+        "PERIODO_CERRADO",
+    }
