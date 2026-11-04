@@ -74,6 +74,15 @@ class InscripcionRequest(CamelModel):
     # validate_default: el control de abajo corre también cuando no viene en el JSON.
     tipo_beca: TipoBeca | None = Field(default=None, validate_default=True)
 
+    @field_validator("telefono_fijo", "email_alternativo", "titulo_posgrado", mode="before")
+    @classmethod
+    def opcional_vacio_es_none(cls, valor: object) -> object:
+        # El formulario manda "" cuando el campo queda en blanco. Se guarda None: así
+        # `titulo_posgrado is not None` dice bien si hay que pedir el título de posgrado.
+        if isinstance(valor, str) and not valor.strip():
+            return None
+        return valor
+
     @field_validator("dni", mode="before")
     @classmethod
     def normalizar_dni(cls, valor: object) -> object:
