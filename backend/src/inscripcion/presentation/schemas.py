@@ -1,7 +1,8 @@
 """Schemas de la inscripción (plan §10): JSON en camelCase, atributos en snake_case.
 
 Acá se validan los datos que llegan del formulario: es la puerta de entrada del sistema. Un dato
-mal formado da 422 con el campo en `field` (lo arma `error_handlers.py`).
+mal formado da 422 con el campo en `field` (lo arma `error_handlers.py`). El texto de un
+`ValueError` de los validadores de abajo es el `message` que lee el aspirante: se escribe para él.
 """
 
 import re

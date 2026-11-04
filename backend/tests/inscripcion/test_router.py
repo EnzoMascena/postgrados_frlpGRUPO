@@ -239,6 +239,27 @@ def test_un_telefono_con_8_numeros_o_mas_se_acepta_con_el_formato_que_sea(
     assert respuesta.status_code == 201
 
 
+@pytest.mark.parametrize(
+    ("cambio", "mensaje"),
+    [
+        ({"dni": "123456"}, "El DNI tiene que tener 7 u 8 dígitos"),
+        ({"telefonoMovil": "a"}, "Ingresá un teléfono de al menos 8 números, con código de área"),
+        ({"solicitaBeca": True, "tipoBeca": None}, "Elegí el tipo de beca"),
+        ({"solicitaBeca": False, "tipoBeca": "30"}, "Sin beca no corresponde un tipo de beca"),
+    ],
+)
+def test_el_422_le_dice_al_aspirante_que_regla_no_cumple(client, formulario, cambio, mensaje):
+    respuesta = client.post(LEGAJOS, json={**formulario, **cambio})
+
+    assert (respuesta.status_code, respuesta.json()["message"]) == (422, mensaje)
+
+
+def test_dos_carreras_iguales_dan_su_mensaje_en_422(client, formulario, carrera):
+    respuesta = client.post(LEGAJOS, json={**formulario, "carreraIds": [str(carrera.id)] * 2})
+
+    assert respuesta.json()["message"] == "Las dos carreras tienen que ser distintas"
+
+
 def test_una_carrera_inactiva_da_422(client, session, formulario):
     inactiva = crear_carrera(session, activa=False)
 
