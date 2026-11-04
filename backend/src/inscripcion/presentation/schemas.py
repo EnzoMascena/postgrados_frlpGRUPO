@@ -94,6 +94,15 @@ class InscripcionRequest(CamelModel):
             raise ValueError("El DNI tiene que tener 7 u 8 dígitos")
         return dni
 
+    @field_validator("telefono_movil", "telefono_fijo")
+    @classmethod
+    def telefono_con_8_numeros(cls, valor: str | None) -> str | None:
+        # La misma regla que el formulario (validaciones.ts): 8 números o más, sin contar
+        # espacios, "+", guiones ni paréntesis. [0-9] y no \d: \d acepta dígitos de otros idiomas.
+        if valor is not None and not re.fullmatch(r"[0-9]{8,}", re.sub(r"[\s+()-]", "", valor)):
+            raise ValueError("Ingresá un teléfono de al menos 8 números, con código de área")
+        return valor
+
     @field_validator("email", "email_alternativo")
     @classmethod
     def email_en_minusculas(cls, valor: str | None) -> str | None:

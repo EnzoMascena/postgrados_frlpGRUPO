@@ -202,6 +202,10 @@ def test_un_opcional_en_blanco_se_guarda_como_none(client, session, formulario, 
         ({"email": "no-es-un-email"}, "email"),
         ({"emailAlternativo": "tampoco"}, "emailAlternativo"),
         ({"telefonoMovil": ""}, "telefonoMovil"),
+        ({"telefonoMovil": "a"}, "telefonoMovil"),
+        ({"telefonoMovil": "1234567"}, "telefonoMovil"),
+        ({"telefonoMovil": "221 456 789a"}, "telefonoMovil"),
+        ({"telefonoFijo": "abc"}, "telefonoFijo"),
         ({"motivacion": "Muy corta"}, "motivacion"),
         ({"comoConocio": "TELEVISION"}, "comoConocio"),
         ({"solicitaBeca": True, "tipoBeca": None}, "tipoBeca"),
@@ -218,6 +222,17 @@ def test_un_campo_que_no_cumple_su_regla_da_422_con_el_campo(
     assert respuesta.json()["error"] == "VALIDATION_ERROR"
     assert respuesta.json()["field"] == campo
     assert legajos_guardados(session) == []
+
+
+@pytest.mark.parametrize("telefono", ["+54 221 4567890", "(0221) 456-7890", "22145678"])
+def test_un_telefono_con_8_numeros_o_mas_se_acepta_con_el_formato_que_sea(
+    client, formulario, telefono
+):
+    cambio = {"telefonoMovil": telefono, "telefonoFijo": telefono}
+
+    respuesta = client.post(LEGAJOS, json={**formulario, **cambio})
+
+    assert respuesta.status_code == 201
 
 
 def test_una_carrera_inactiva_da_422(client, session, formulario):
