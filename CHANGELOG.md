@@ -33,6 +33,7 @@ Este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 - Formulario de inscripción conectado a la API: validación en tiempo real, guarda el borrador con `POST /legajos`, muestra los errores del back al lado de cada campo y permite pedir un link nuevo
 - Retro del hito 1 en `docs/retros/2026-11-01.md`
 - Cambio de estado del legajo con `ServicioEstados`: valida la transición, genera el número de legajo sin repetirlo, guarda la auditoría y manda el email de cada acción (incluido el aviso de vencimiento a los coordinadores). Detalle del legajo con checklist de documentos, historial y acciones permitidas: `GET /legajos/{id}` y `PATCH /legajos/{id}/estado` para el coordinador
+- Búsqueda de legajos para el dashboard del coordinador: `GET /legajos` busca por DNI exacto o parte del apellido (sin distinguir mayúsculas, con los comodines `%` y `_` tomados literales), filtra por estado, cohorte, carrera y beca, pagina con los más nuevos primero y cuenta los documentos cargados de los requeridos; `GET /legajos/resumen` da el total, los 10 estados y las becas por tipo, con cohorte opcional
 
 ### Changed
 - `docker-compose.yml` y `.env.example` reemplazan las plantillas viejas de Node
