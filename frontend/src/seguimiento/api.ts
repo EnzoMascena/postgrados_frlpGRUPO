@@ -5,7 +5,9 @@
    El aspirante no tiene usuario: entra con el link que le llegó
    por email, /seguimiento/{token}. Ese token es su "llave" y va
    en la ruta de cada pedido, así que no hace falta JWT:
-     GET /seguimiento/{token} → su legajo (vista aspirante)
+     GET  /seguimiento/{token}                 → su legajo
+     POST /seguimiento/{token}/documentos      → sube un PDF
+     GET  /seguimiento/{token}/documentos/{id}/download → lo ve
    Si el link no existe o venció (60 días), el back responde 404.
 
    El token se pasa por encodeURIComponent: viene de la URL y
@@ -14,7 +16,7 @@
    ═══════════════════════════════════════════════════════════════ */
 
 import { ApiError, apiFetch } from '../shared/api/client'
-import type { LegajoDetalle } from '../shared/api/tipos'
+import type { LegajoDetalle, TipoDocumento } from '../shared/api/tipos'
 
 /** La ruta base de todos los pedidos de este aspirante. */
 export function rutaSeguimiento(token: string): string {
@@ -24,6 +26,43 @@ export function rutaSeguimiento(token: string): string {
 /** GET /seguimiento/{token}. */
 export function obtenerSeguimiento(token: string): Promise<LegajoDetalle> {
   return apiFetch<LegajoDetalle>(rutaSeguimiento(token))
+}
+
+/** Respuesta 201 de POST /seguimiento/{token}/documentos (plan §10). */
+export type DocumentoSubido = {
+  documentoId: string
+  tipo: TipoDocumento
+  nombreOriginal: string
+  tamanioBytes: number
+  checksumSha256: string
+  fechaSubida: string
+}
+
+/**
+ * POST /seguimiento/{token}/documentos, multipart con `tipo` y `archivo`.
+ * No se pone Content-Type: el navegador lo arma con el boundary del FormData.
+ */
+export function subirDocumento(
+  token: string,
+  tipo: TipoDocumento,
+  archivo: File,
+): Promise<DocumentoSubido> {
+  const formulario = new FormData()
+  formulario.append('tipo', tipo)
+  formulario.append('archivo', archivo)
+  return apiFetch<DocumentoSubido>(`${rutaSeguimiento(token)}/documentos`, {
+    method: 'POST',
+    body: formulario,
+  })
+}
+
+/**
+ * La URL para ver un PDF subido, en una pestaña nueva. Es un link común
+ * (no pasa por apiFetch) porque el token ya va en la ruta: no hace falta
+ * ningún encabezado, y así el navegador muestra el PDF con su visor.
+ */
+export function urlDescarga(token: string, documentoId: string): string {
+  return `/api/v1${rutaSeguimiento(token)}/documentos/${encodeURIComponent(documentoId)}/download`
 }
 
 /** true si el link no vale: no existe o venció. */
