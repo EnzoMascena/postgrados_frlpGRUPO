@@ -16,8 +16,8 @@
      · 404          → el link no vale: card con el mensaje del back
                       y un botón para pedir uno nuevo
      · otro error   → <Alerta> con el mensaje (sin conexión, 500)
-     · el legajo    → código y estado arriba, el aviso de qué hacer
-                      y el resumen de los datos
+     · el legajo    → código y estado arriba, el aviso de qué hacer,
+                      la documentación (PDFs) y el resumen de los datos
 
    Comparado con la entrega 2: antes no existía esta pantalla y el
    estado del legajo no se veía en ningún lado. Ahora todo sale del
@@ -32,6 +32,7 @@ import Card from '../../shared/components/Card'
 import Cargando from '../../shared/components/Cargando'
 import EstadoBadge from '../../shared/components/EstadoBadge'
 import AvisoEstado from '../components/AvisoEstado'
+import Documentacion from '../components/Documentacion'
 import ResumenDatos from '../components/ResumenDatos'
 import { esLinkInvalido } from '../api'
 import { useSeguimiento } from '../hooks/useSeguimiento'
@@ -86,6 +87,7 @@ export default function Seguimiento() {
     return (
       <>
         <AvisoEstado legajo={seguimiento.data} />
+        <Documentacion token={token} legajo={seguimiento.data} />
         <ResumenDatos legajo={seguimiento.data} />
       </>
     )
