@@ -1,19 +1,23 @@
-"""`LegajoRepository` y `DetalleRepository` con SQLModel: lee y escribe `legajos` y
-`auditoria_legajos`, y lee lo que el detalle necesita de `cohortes`, `carreras` y `documentos`.
+"""`LegajoRepository`, `DetalleRepository`, `BusquedaRepository` y `ResumenRepository` con
+SQLModel: lee y escribe `legajos` y `auditoria_legajos`, y lee lo que el detalle, la búsqueda y
+el resumen necesitan de `cohortes`, `carreras` y `documentos`.
 
-Devuelve las entidades del dominio y los datos del caso de uso (`Legajo`, `FichaLegajo`, …),
-nunca las filas ORM: así `ServicioEstados` y `obtener_detalle` no se enteran de que hay una base.
+Devuelve las entidades del dominio y los datos del caso de uso (`Legajo`, `FichaLegajo`,
+`FilaBusqueda`, …), nunca las filas ORM: así los casos de uso no se enteran de que hay una base.
 """
 
+from collections import defaultdict
+from typing import Any
 from uuid import UUID
 
-from sqlmodel import Session, select
+from sqlmodel import Session, col, func, select
 
 from src.cohortes.domain.tipos import TipoCarrera
 from src.cohortes.infrastructure.orm_models import CarreraORM, CohorteORM
 from src.gestion_documental.domain.tipos import TipoDocumento
 from src.gestion_documental.infrastructure.orm_models import DocumentoORM
 from src.inscripcion.domain.tipos import ComoConocio, TipoBeca
+from src.legajos.application.buscar_legajos import CriteriosBusqueda, FilaBusqueda
 from src.legajos.application.obtener_detalle import (
     CarreraResumen,
     CohorteResumen,
@@ -177,6 +181,120 @@ class PgLegajoRepository:
             )
             for fila in filas
         ]
+
+    # --- Lo que lee la búsqueda (`buscar_legajos`) y el resumen (`obtener_resumen`) ---
+
+    def buscar(self, criterios: CriteriosBusqueda, offset: int, limite: int) -> list[FilaBusqueda]:
+        # Tres consultas por página, no una por fila: los legajos con su cohorte, después las
+        # carreras y los tipos de documento de todos esos legajos juntos (`IN`).
+        filas = self.session.exec(
+            select(LegajoORM, CohorteORM.nombre)
+            .join(CohorteORM, CohorteORM.id == LegajoORM.cohorte_id)
+            .where(*_condiciones(criterios))
+            # Los más nuevos primero; el id desempata para que las páginas no se pisen.
+            .order_by(col(LegajoORM.created_at).desc(), col(LegajoORM.id).desc())
+            .offset(offset)
+            .limit(limite)
+        ).all()
+        ids = [legajo.id for legajo, _ in filas]
+
+        carreras: dict[UUID, list[str]] = defaultdict(list)
+        for legajo_id, nombre in self.session.exec(
+            select(LegajoCarreraORM.legajo_id, CarreraORM.nombre)
+            .join(CarreraORM, CarreraORM.id == LegajoCarreraORM.carrera_id)
+            .where(col(LegajoCarreraORM.legajo_id).in_(ids))
+            .order_by(LegajoCarreraORM.legajo_id, LegajoCarreraORM.orden)
+        ).all():
+            carreras[legajo_id].append(nombre)
+
+        cargados: dict[UUID, set[TipoDocumento]] = defaultdict(set)
+        for legajo_id, tipo in self.session.exec(
+            select(DocumentoORM.legajo_id, DocumentoORM.tipo).where(
+                col(DocumentoORM.legajo_id).in_(ids)
+            )
+        ).all():
+            cargados[legajo_id].add(TipoDocumento(tipo))
+
+        return [
+            FilaBusqueda(
+                id=legajo.id,
+                codigo_seguimiento=legajo.codigo_seguimiento,
+                numero_legajo=legajo.numero_legajo,
+                apellido=legajo.apellido,
+                nombre=legajo.nombre,
+                dni=legajo.dni,
+                email=legajo.email,
+                estado=EstadoLegajo(legajo.estado),
+                cohorte=nombre_cohorte,
+                carreras=carreras[legajo.id],
+                solicita_beca=legajo.solicita_beca,
+                tipo_beca=TipoBeca(legajo.tipo_beca) if legajo.tipo_beca else None,
+                titulo_posgrado=legajo.titulo_posgrado,
+                tipos_cargados=frozenset(cargados[legajo.id]),
+                fecha_inscripcion=legajo.fecha_inscripcion,
+            )
+            for legajo, nombre_cohorte in filas
+        ]
+
+    def contar(self, criterios: CriteriosBusqueda) -> int:
+        return self.session.exec(
+            select(func.count()).select_from(LegajoORM).where(*_condiciones(criterios))
+        ).one()
+
+    def contar_por_estado(self, cohorte_id: UUID | None) -> dict[EstadoLegajo, int]:
+        filas = self.session.exec(
+            select(LegajoORM.estado, func.count())
+            .where(*_de_la_cohorte(cohorte_id))
+            .group_by(LegajoORM.estado)
+        ).all()
+        return {EstadoLegajo(estado): cantidad for estado, cantidad in filas}
+
+    def contar_por_beca(self, cohorte_id: UUID | None) -> dict[TipoBeca, int]:
+        filas = self.session.exec(
+            select(LegajoORM.tipo_beca, func.count())
+            .where(col(LegajoORM.tipo_beca).is_not(None), *_de_la_cohorte(cohorte_id))
+            .group_by(LegajoORM.tipo_beca)
+        ).all()
+        return {TipoBeca(tipo): cantidad for tipo, cantidad in filas}
+
+
+def _condiciones(criterios: CriteriosBusqueda) -> list[Any]:
+    """Los `WHERE` de la búsqueda. Todo va como parámetro, nunca pegado en el SQL (NFR-S03)."""
+    condiciones: list[Any] = _de_la_cohorte(criterios.cohorte_id)
+    if criterios.dni is not None:
+        condiciones.append(LegajoORM.dni == criterios.dni)
+    if criterios.apellido is not None:
+        # `%texto%` no usa el índice, y está bien para ~500 aspirantes por cohorte.
+        condiciones.append(
+            col(LegajoORM.apellido).ilike(f"%{_escapar_like(criterios.apellido)}%", escape="\\")
+        )
+    if criterios.estado is not None:
+        condiciones.append(LegajoORM.estado == criterios.estado.value)
+    if criterios.carrera_id is not None:
+        # Subconsulta y no JOIN: con dos carreras, un JOIN repetiría el legajo en el listado.
+        condiciones.append(
+            col(LegajoORM.id).in_(
+                select(LegajoCarreraORM.legajo_id).where(
+                    LegajoCarreraORM.carrera_id == criterios.carrera_id
+                )
+            )
+        )
+    if criterios.beca is not None:
+        condiciones.append(LegajoORM.solicita_beca == criterios.beca)
+    return condiciones
+
+
+def _de_la_cohorte(cohorte_id: UUID | None) -> list[Any]:
+    return [LegajoORM.cohorte_id == cohorte_id] if cohorte_id is not None else []
+
+
+def _escapar_like(texto: str) -> str:
+    """Que `%`, `_` y `\\` que escriba el usuario se busquen literales y no como comodines.
+
+    El valor ya viaja como parámetro (no hay inyección SQL), pero sin esto `q=%%%` traería todos
+    los legajos. Primero la barra, para no escapar dos veces las que agregan las otras.
+    """
+    return texto.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
 
 
 def _a_dominio(fila: LegajoORM) -> Legajo:

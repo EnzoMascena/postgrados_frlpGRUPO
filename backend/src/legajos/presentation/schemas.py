@@ -217,3 +217,101 @@ class CambiarEstadoRequest(CamelModel):
     # Obligatorio (5 caracteres o más) solo para OBSERVAR: eso lo valida el dominio, que da el
     # mismo 422 venga de donde venga. Acá solo un tope contra bodies enormes.
     comentario: str | None = Field(default=None, max_length=LARGO_MAXIMO_COMENTARIO)
+
+
+# --- Búsqueda y resumen (US-CORE-007): el dashboard de Loli (D4) ---
+
+
+class LegajoListadoResponse(CamelModel):
+    """Una fila del listado: se arma desde `LegajoListado` de `buscar_legajos`."""
+
+    id: UUID
+    codigo_seguimiento: str
+    numero_legajo: str | None
+    apellido: str
+    nombre: str
+    dni: str
+    email: str
+    estado: EstadoLegajo
+    cohorte: str  # el nombre, para mostrarlo tal cual
+    carreras: list[str]  # los nombres, en el orden que las eligió
+    solicita_beca: bool
+    tipo_beca: TipoBeca | None
+    documentos_cargados: int  # de los requeridos: nunca más que `documentosRequeridos`
+    documentos_requeridos: int
+    fecha_inscripcion: datetime | None  # nula mientras es borrador
+
+
+class PaginaLegajosResponse(CamelModel):
+    """`GET /legajos`. `total` es la cantidad sin paginar, para armar el paginador."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "items": [
+                        {
+                            "id": "4b0e6f1a-2c3d-4e5f-8a9b-0c1d2e3f4a5b",
+                            "codigoSeguimiento": "7F3A9C21",
+                            "numeroLegajo": None,
+                            "apellido": "Rodríguez",
+                            "nombre": "Ana Laura",
+                            "dni": "28456789",
+                            "email": "ana.rodriguez@example.com",
+                            "estado": "PENDIENTE",
+                            "cohorte": "Cohorte 2026",
+                            "carreras": ["Maestría en Tecnología Informática"],
+                            "solicitaBeca": True,
+                            "tipoBeca": "30",
+                            "documentosCargados": 6,
+                            "documentosRequeridos": 6,
+                            "fechaInscripcion": "2026-11-03T14:20:00Z",
+                        }
+                    ],
+                    "total": 1,
+                    "page": 1,
+                    "size": 20,
+                }
+            ]
+        }
+    )
+
+    items: list[LegajoListadoResponse]
+    total: int
+    page: int
+    size: int
+
+
+class ResumenLegajosResponse(CamelModel):
+    """`GET /legajos/resumen`: las tarjetas del dashboard. `porEstado` trae siempre los 10."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "total": 13,
+                    "porEstado": {
+                        "BORRADOR": 1,
+                        "PENDIENTE": 3,
+                        "EN_REVISION": 2,
+                        "OBSERVADO": 1,
+                        "COMPLETADO": 2,
+                        "ACTIVO": 4,
+                        "VENCIDO": 0,
+                        "RECHAZADO": 0,
+                        "BAJA": 0,
+                        "GRADUADO": 0,
+                    },
+                    "conBeca": 4,
+                    "beca30": 2,
+                    "beca100": 2,
+                }
+            ]
+        }
+    )
+
+    total: int
+    por_estado: dict[EstadoLegajo, int]
+    con_beca: int
+    beca30: int
+    beca100: int
