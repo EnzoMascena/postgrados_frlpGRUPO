@@ -96,9 +96,9 @@ def _enviar_despues(
         },
         422: {
             "description": (
-                "Un campo no cumple una regla: DNI de 7 u 8 dígitos, emails válidos, motivación "
-                "de 50 caracteres o más, 1 o 2 carreras distintas y activas, tipo de beca solo si "
-                "la pide, o una cohorte que no existe"
+                "Un campo no cumple una regla: DNI de 7 u 8 dígitos, email y email alternativo "
+                "válidos, motivación de 50 a 2000 caracteres, 1 o 2 carreras distintas y activas, "
+                "tipo de beca solo si la pide, o una cohorte que no existe"
             ),
             **_error(422, "VALIDATION_ERROR", MENSAJE_CARRERA_NO_DISPONIBLE, "carreraIds"),
         },

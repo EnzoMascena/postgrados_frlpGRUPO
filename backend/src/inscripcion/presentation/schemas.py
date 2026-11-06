@@ -16,6 +16,9 @@ from src.legajos.domain.estados import EstadoLegajo
 from src.shared.schemas import CamelModel
 
 LARGO_MINIMO_MOTIVACION = 50
+# El endpoint es público y la columna es `text`: sin tope, cualquiera podría llenar la base con
+# pocos envíos. 2000, como el comentario del coordinador (`LARGO_MAXIMO_COMENTARIO`).
+LARGO_MAXIMO_MOTIVACION = 2000
 
 
 class InscripcionRequest(CamelModel):
@@ -110,6 +113,17 @@ class InscripcionRequest(CamelModel):
     def email_en_minusculas(cls, valor: str | None) -> str | None:
         # Así "Ana@Mail.com" y "ana@mail.com" son el mismo email en la cohorte.
         return valor.lower() if valor else valor
+
+    @field_validator("motivacion")
+    @classmethod
+    def motivacion_con_tope(cls, valor: str) -> str:
+        # Llega sin los espacios de los bordes (`str_strip_whitespace`): se cuenta el mismo texto
+        # que se guarda.
+        if len(valor) > LARGO_MAXIMO_MOTIVACION:
+            raise ValueError(
+                f"La motivación puede tener hasta {LARGO_MAXIMO_MOTIVACION} caracteres"
+            )
+        return valor
 
     @field_validator("carrera_ids")
     @classmethod
