@@ -63,6 +63,8 @@ type Props = {
   /** Errores del back por campo. Pasá siempre el mismo objeto mientras no cambie. */
   erroresServidor?: Errores
   textoBoton: string
+  /** Si viene, se muestra "Cancelar" al lado del botón (al editar desde el seguimiento). */
+  onCancelar?: () => void
 }
 
 // El orden en que aparecen en pantalla: el foco va al primero con error.
@@ -124,6 +126,7 @@ export default function FormularioDatos({
   enviando = false,
   erroresServidor = SIN_ERRORES,
   textoBoton,
+  onCancelar,
 }: Props) {
   // useId da un prefijo único, así los id no chocan si hay dos formularios.
   const base = useId()
@@ -464,7 +467,12 @@ export default function FormularioDatos({
           )}
         </Card>
 
-        <div className="flex justify-end pb-2">
+        <div className="flex justify-end gap-2 pb-2">
+          {onCancelar && (
+            <Button type="button" onClick={onCancelar}>
+              Cancelar
+            </Button>
+          )}
           <Button
             type="submit"
             variant="primary"
