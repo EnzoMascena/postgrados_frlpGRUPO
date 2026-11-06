@@ -174,6 +174,22 @@ def test_el_mismo_dni_en_otra_cohorte_se_acepta(client, session, formulario):
     assert respuesta.status_code == 201
 
 
+@pytest.mark.parametrize("en_blanco", ["", "   "])
+def test_un_opcional_en_blanco_se_guarda_como_none(client, session, formulario, en_blanco):
+    # Si el título de posgrado quedara como "", el envío y el detalle le pedirían su copia.
+    opcionales = {"telefonoFijo": en_blanco, "emailAlternativo": en_blanco}
+    opcionales["tituloPosgrado"] = en_blanco
+
+    cuerpo = client.post(LEGAJOS, json={**formulario, **opcionales}).json()
+
+    legajo = session.get(LegajoORM, cuerpo["legajoId"])
+    assert (legajo.telefono_fijo, legajo.email_alternativo, legajo.titulo_posgrado) == (
+        None,
+        None,
+        None,
+    )
+
+
 @pytest.mark.parametrize(
     ("cambio", "campo"),
     [

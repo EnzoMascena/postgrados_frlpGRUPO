@@ -41,6 +41,9 @@ Este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 - En `docker compose`, el front monta el código y recarga solo al guardar, y el back corre el seed siempre al arrancar (ya sin el `if` provisorio)
 - El seed valida cada paso del historial con la máquina de estados del legajo y arma los números con `generar_numero_legajo`; la etiqueta "Constancia de CUIT / CUIL" del front ahora coincide con la del back
 
+### Fixed
+- En `POST /legajos`, el teléfono fijo, el email alternativo y el título de posgrado vacíos o con solo espacios se guardan como `null`: así no se pide la copia del título de posgrado a quien no lo tiene y un email alternativo en blanco ya no da 422
+
 ---
 
 ## [v0.1.0-alpha] — Sprint 0 (esperado 15/05/2026)
