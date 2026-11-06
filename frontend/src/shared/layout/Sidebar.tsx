@@ -38,6 +38,7 @@ import {
 } from '@tabler/icons-react'
 import type { ElementType } from 'react'
 import { useAuth } from '../auth/useAuth'
+import { useCohortes } from '../hooks/useCatalogos'
 
 type NavItem = { to: string; label: string; icon: ElementType; demo?: boolean }
 type NavGroup = { label: string; items: NavItem[] }
@@ -63,8 +64,17 @@ const groups: NavGroup[] = [
   },
 ]
 
-export default function Sidebar() {
+type Props = {
+  /** En el celular, el layout cierra el menú cuando se elige una pantalla. */
+  onNavegar?: () => void
+}
+
+export default function Sidebar({ onNavegar }: Props) {
   const { usuario, cerrarSesion } = useAuth()
+  // Mismo dato que el interruptor del Dashboard (['cohortes'] en la
+  // caché): al abrir o cerrar el período, este indicador cambia solo.
+  const cohortes = useCohortes()
+  const inscripcionAbierta = cohortes.data?.some((c) => c.inscripcionAbierta)
 
   return (
     <aside className="w-60 flex-shrink-0 bg-sidebar flex flex-col py-3 overflow-y-auto">
@@ -76,6 +86,15 @@ export default function Sidebar() {
           <div className="mt-3 min-w-0">
             <div className="text-[12.5px] text-on-dark truncate">{usuario.nombre}</div>
             <div className="text-[11px] text-faint truncate">{usuario.email}</div>
+          </div>
+        )}
+        {cohortes.data && (
+          <div className="mt-2 flex items-center gap-1.5 text-[11px] text-faint">
+            <span
+              aria-hidden="true"
+              className={'w-1.5 h-1.5 rounded-full ' + (inscripcionAbierta ? 'bg-ok' : 'bg-line-strong')}
+            />
+            Inscripción {inscripcionAbierta ? 'abierta' : 'cerrada'}
           </div>
         )}
       </div>
@@ -97,6 +116,7 @@ export default function Sidebar() {
                 key={item.to}
                 to={item.to}
                 end
+                onClick={onNavegar}
                 className={({ isActive }) =>
                   'w-full flex items-center gap-2 px-2 py-[7px] rounded-input text-[12.5px] transition-colors ' +
                   (isActive
