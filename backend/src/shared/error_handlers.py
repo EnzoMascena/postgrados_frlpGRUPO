@@ -87,8 +87,14 @@ def registrar_manejadores_de_errores(app: FastAPI) -> None:
         # Se informa solo el primer error, que es lo que el front muestra junto al campo.
         error = exc.errors()[0]
         campo = _campo_del_error(error)
+        causa = error.get("ctx", {}).get("error")
         if error["type"] == "missing":
             mensaje = f"El campo {campo} es obligatorio"
+        elif error["type"] == "value_error" and type(causa) is ValueError:
+            # Un validador nuestro levantó `ValueError("mensaje")`: ese texto ya está escrito para
+            # el aspirante. Los de las librerías (como EmailStr) vienen en inglés y no pasan por
+            # acá: no traen `ctx["error"]`, o es una subclase de ValueError.
+            mensaje = str(causa)
         else:
             mensaje = f"El valor de {campo} no es válido"
         return JSONResponse(

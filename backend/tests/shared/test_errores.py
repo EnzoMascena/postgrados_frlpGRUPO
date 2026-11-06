@@ -8,6 +8,7 @@ import re
 import pytest
 from fastapi import FastAPI, HTTPException
 from fastapi.testclient import TestClient
+from pydantic import EmailStr, field_validator
 
 from src.shared.error_handlers import MENSAJES_HTTP, registrar_manejadores_de_errores
 from src.shared.errors import (
@@ -49,6 +50,18 @@ class Formulario(CamelModel):
     carrera_ids: list[int]
 
 
+class ConReglas(CamelModel):
+    dni: str
+    email: EmailStr
+
+    @field_validator("dni")
+    @classmethod
+    def dni_de_8_digitos(cls, valor: str) -> str:
+        if len(valor) != 8:
+            raise ValueError("El DNI tiene que tener 8 dígitos")
+        return valor
+
+
 @pytest.fixture
 def cliente():
     app = FastAPI()
@@ -64,6 +77,10 @@ def cliente():
 
     @app.post("/formulario")
     def formulario(datos: Formulario):
+        return datos
+
+    @app.post("/con-reglas")
+    def con_reglas(datos: ConReglas):
         return datos
 
     @app.get("/pagina")
@@ -135,6 +152,24 @@ def test_el_422_con_un_valor_invalido_usa_el_campo_y_no_el_indice_de_la_lista(cl
     assert respuesta.status_code == 422
     assert cuerpo["field"] == "carreraIds"
     assert cuerpo["message"] == "El valor de carreraIds no es válido"
+
+
+def test_el_422_de_un_validador_propio_conserva_su_mensaje(cliente):
+    respuesta = cliente.post("/con-reglas", json={"dni": "123", "email": "ana@example.com"})
+
+    cuerpo = respuesta.json()
+    assert respuesta.status_code == 422
+    assert cuerpo["field"] == "dni"
+    assert cuerpo["message"] == "El DNI tiene que tener 8 dígitos"
+
+
+def test_el_422_de_un_tipo_de_pydantic_sigue_con_el_mensaje_generico_en_español(cliente):
+    # El de EmailStr es un value_error de la librería, con su texto en inglés: no tiene que salir.
+    respuesta = cliente.post("/con-reglas", json={"dni": "12345678", "email": "no-es-un-email"})
+
+    cuerpo = respuesta.json()
+    assert cuerpo["field"] == "email"
+    assert cuerpo["message"] == "El valor de email no es válido"
 
 
 def test_el_422_tambien_aplica_a_los_parametros_de_la_url(cliente):

@@ -1,7 +1,8 @@
 """Schemas de la inscripción (plan §10): JSON en camelCase, atributos en snake_case.
 
 Acá se validan los datos que llegan del formulario: es la puerta de entrada del sistema. Un dato
-mal formado da 422 con el campo en `field` (lo arma `error_handlers.py`).
+mal formado da 422 con el campo en `field` (lo arma `error_handlers.py`). El texto de un
+`ValueError` de los validadores de abajo es el `message` que lee el aspirante: se escribe para él.
 """
 
 import re
@@ -15,6 +16,9 @@ from src.legajos.domain.estados import EstadoLegajo
 from src.shared.schemas import CamelModel
 
 LARGO_MINIMO_MOTIVACION = 50
+# El endpoint es público y la columna es `text`: sin tope, cualquiera podría llenar la base con
+# pocos envíos. 2000, como el comentario del coordinador (`LARGO_MAXIMO_COMENTARIO`).
+LARGO_MAXIMO_MOTIVACION = 2000
 
 
 class InscripcionRequest(CamelModel):
@@ -61,7 +65,8 @@ class InscripcionRequest(CamelModel):
     telefono_movil: str = Field(min_length=1, max_length=30)
     telefono_fijo: str | None = Field(default=None, max_length=30)
     email: EmailStr = Field(max_length=255)
-    email_alternativo: EmailStr | None = Field(default=None, max_length=255)
+    # Obligatorio: lo pide el SRS (campos obligatorios) y el contrato del plan §10.
+    email_alternativo: EmailStr = Field(max_length=255)
     domicilio: str = Field(min_length=1, max_length=255)
     ciudad: str = Field(min_length=1, max_length=100)
     provincia: str = Field(min_length=1, max_length=100)
@@ -74,7 +79,7 @@ class InscripcionRequest(CamelModel):
     # validate_default: el control de abajo corre también cuando no viene en el JSON.
     tipo_beca: TipoBeca | None = Field(default=None, validate_default=True)
 
-    @field_validator("telefono_fijo", "email_alternativo", "titulo_posgrado", mode="before")
+    @field_validator("telefono_fijo", "titulo_posgrado", mode="before")
     @classmethod
     def opcional_vacio_es_none(cls, valor: object) -> object:
         # El formulario manda "" cuando el campo queda en blanco. Se guarda None: así
@@ -94,11 +99,31 @@ class InscripcionRequest(CamelModel):
             raise ValueError("El DNI tiene que tener 7 u 8 dígitos")
         return dni
 
+    @field_validator("telefono_movil", "telefono_fijo")
+    @classmethod
+    def telefono_con_8_numeros(cls, valor: str | None) -> str | None:
+        # La misma regla que el formulario (validaciones.ts): 8 números o más, sin contar
+        # espacios, "+", guiones ni paréntesis. [0-9] y no \d: \d acepta dígitos de otros idiomas.
+        if valor is not None and not re.fullmatch(r"[0-9]{8,}", re.sub(r"[\s+()-]", "", valor)):
+            raise ValueError("Ingresá un teléfono de al menos 8 números, con código de área")
+        return valor
+
     @field_validator("email", "email_alternativo")
     @classmethod
     def email_en_minusculas(cls, valor: str | None) -> str | None:
         # Así "Ana@Mail.com" y "ana@mail.com" son el mismo email en la cohorte.
         return valor.lower() if valor else valor
+
+    @field_validator("motivacion")
+    @classmethod
+    def motivacion_con_tope(cls, valor: str) -> str:
+        # Llega sin los espacios de los bordes (`str_strip_whitespace`): se cuenta el mismo texto
+        # que se guarda.
+        if len(valor) > LARGO_MAXIMO_MOTIVACION:
+            raise ValueError(
+                f"La motivación puede tener hasta {LARGO_MAXIMO_MOTIVACION} caracteres"
+            )
+        return valor
 
     @field_validator("carrera_ids")
     @classmethod

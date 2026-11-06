@@ -44,9 +44,12 @@ Este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 - El CI reemplaza el pipeline de Node por ruff, Alembic y pytest con PostgreSQL 16 en el back, y lint y build en el front
 - En `docker compose`, el front monta el código y recarga solo al guardar, y el back corre el seed siempre al arrancar (ya sin el `if` provisorio)
 - El seed valida cada paso del historial con la máquina de estados del legajo y arma los números con `generar_numero_legajo`; la etiqueta "Constancia de CUIT / CUIL" del front ahora coincide con la del back
+- Ajustes de la inscripción tras la revisión del PR #44: el teléfono pide 8 números o más como el formulario, el 422 muestra el mensaje de cada regla en vez del genérico, Swagger aclara de dónde salen los ids y muestra el 409 de período cerrado, y recuperar acceso manda el email después de responder
 
 ### Fixed
-- En `POST /legajos`, el teléfono fijo, el email alternativo y el título de posgrado vacíos o con solo espacios se guardan como `null`: así no se pide la copia del título de posgrado a quien no lo tiene y un email alternativo en blanco ya no da 422
+- En `POST /legajos`, el teléfono fijo y el título de posgrado vacíos o con solo espacios se guardan como `null`: así no se pide la copia del título de posgrado a quien no lo tiene
+- En `POST /legajos`, el email alternativo es obligatorio, como piden el SRS y el contrato del plan (antes se aceptaba vacío o nulo), y la motivación puede tener hasta 2000 caracteres (antes no tenía tope y el endpoint es público)
+- En el formulario de inscripción, la motivación se frena en 2000 caracteres: el textarea no deja escribir más, el contador muestra "N / 2000" y la validación usa el mismo mensaje que el 422 del back
 
 ---
 
