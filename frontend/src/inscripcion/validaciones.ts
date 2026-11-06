@@ -25,6 +25,8 @@ import type { CampoInscripcion, DatosInscripcion, Errores } from './types'
 export type Resultado = string | null
 
 export const MOTIVACION_MINIMA = 50
+/** Mismo tope que LARGO_MAXIMO_MOTIVACION del back (POST /legajos). */
+export const MOTIVACION_MAXIMA = 2000
 export const MAXIMO_CARRERAS = 2
 
 // ── Reglas sueltas ─────────────────────────────────────────────
@@ -67,10 +69,12 @@ export function validarTelefono(valor: string, esObligatorio = true): Resultado 
     : 'Ingresá un teléfono de al menos 8 números, con código de área'
 }
 
-/** Motivación de 50 caracteres o más (sin contar espacios de los bordes). */
+/** Motivación de 50 a 2000 caracteres (sin contar espacios de los bordes, como el back). */
 export function validarMotivacion(valor: string): Resultado {
   const largo = valor.trim().length
   if (largo === 0) return `Contanos por qué querés cursar (mínimo ${MOTIVACION_MINIMA} caracteres)`
+  // Mismo texto que el 422 del back.
+  if (largo > MOTIVACION_MAXIMA) return `La motivación puede tener hasta ${MOTIVACION_MAXIMA} caracteres`
   const faltan = MOTIVACION_MINIMA - largo
   return faltan > 0
     ? `Escribí al menos ${MOTIVACION_MINIMA} caracteres (te faltan ${faltan})`
