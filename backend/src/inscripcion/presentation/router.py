@@ -25,6 +25,12 @@ from src.inscripcion.presentation.schemas import (
     RecuperarAccesoResponse,
 )
 from src.shared.database import get_session
+from src.shared.limite import (
+    MAXIMO_ENVIOS,
+    limite_inscripciones,
+    limite_recuperar_acceso,
+    mensaje_de_limite,
+)
 
 router = APIRouter(prefix="/legajos", tags=["Inscripción"])
 
@@ -46,6 +52,16 @@ def _error(status: int, codigo: str, mensaje: str, campo: str | None = None) -> 
     """Un error de ejemplo para Swagger."""
     ejemplo = _cuerpo_de_error(status, codigo, mensaje, campo)
     return {"content": {"application/json": {"example": ejemplo}}}
+
+
+# El 429 del límite por IP (E7, NFR-S06): lo comparten las dos rutas públicas.
+LIMITE_POR_IP = {
+    "description": (
+        f"Más de {MAXIMO_ENVIOS} envíos desde la misma IP en la última hora. `Retry-After` dice "
+        "cuántos segundos esperar"
+    ),
+    **_error(429, "RATE_LIMITED", mensaje_de_limite(MAXIMO_ENVIOS, 15 * 60)),
+}
 
 
 def _enviar_despues(
@@ -102,7 +118,9 @@ def _enviar_despues(
             ),
             **_error(422, "VALIDATION_ERROR", MENSAJE_CARRERA_NO_DISPONIBLE, "carreraIds"),
         },
+        429: LIMITE_POR_IP,
     },
+    dependencies=[Depends(limite_inscripciones)],
 )
 def crear_legajo(
     datos: InscripcionRequest, session: Session = Depends(get_session)
@@ -132,7 +150,9 @@ def crear_legajo(
             "description": "El email no es válido",
             **_error(422, "VALIDATION_ERROR", "El valor de email no es válido", "email"),
         },
+        429: LIMITE_POR_IP,
     },
+    dependencies=[Depends(limite_recuperar_acceso)],
 )
 def pedir_link_nuevo(
     datos: RecuperarAccesoRequest,

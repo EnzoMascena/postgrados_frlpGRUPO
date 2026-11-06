@@ -1,6 +1,7 @@
-"""El límite de envíos por IP (E7, NFR-S06): la ventana y el 429.
+"""El límite de envíos por IP (E7, NFR-S06): la ventana, el 429 y las dos rutas públicas.
 
-Usan un reloj falso, para mover el tiempo sin esperar una hora.
+Los primeros tests usan un reloj falso, para mover el tiempo sin esperar una hora. Los últimos
+pegan a las rutas reales de Fran con el `client` de siempre.
 """
 
 import threading
@@ -11,6 +12,8 @@ from fastapi import HTTPException
 
 from src.shared.limite import MAXIMO_ENVIOS, VENTANA_SEGUNDOS, LimitePorIP, mensaje_de_limite
 
+LEGAJOS = "/api/v1/legajos"
+RECUPERAR_ACCESO = "/api/v1/legajos/recuperar-acceso"
 IP = "200.1.2.3"
 
 
@@ -152,3 +155,46 @@ def test_reiniciar_pone_los_contadores_en_cero(limite):
     limite.reiniciar()
 
     assert not esta_frenado(limite)
+
+
+# --- En las rutas públicas de Fran ---
+
+
+def test_el_formulario_responde_429_al_envio_11_con_el_formato_uniforme(client):
+    for _ in range(MAXIMO_ENVIOS):
+        # Un envío inválido también cuenta: lo que se limita es el intento.
+        assert client.post(LEGAJOS, json={}).status_code == 422
+
+    respuesta = client.post(LEGAJOS, json={})
+
+    assert respuesta.status_code == 429
+    cuerpo = respuesta.json()
+    assert (cuerpo["statusCode"], cuerpo["error"], cuerpo["field"]) == (429, "RATE_LIMITED", None)
+    assert cuerpo["message"].startswith("Llegaste al límite de 10 envíos por hora")
+    assert 0 < int(respuesta.headers["retry-after"]) <= VENTANA_SEGUNDOS
+    assert respuesta.headers["x-content-type-options"] == "nosniff"  # y los headers de seguridad
+
+
+def test_recuperar_acceso_tambien_frena_el_envio_11(client):
+    for _ in range(MAXIMO_ENVIOS):
+        assert client.post(RECUPERAR_ACCESO, json={"email": "no-es-un-email"}).status_code == 422
+
+    respuesta = client.post(RECUPERAR_ACCESO, json={"email": "no-es-un-email"})
+
+    assert (respuesta.status_code, respuesta.json()["error"]) == (429, "RATE_LIMITED")
+
+
+def test_las_dos_rutas_cuentan_por_separado(client):
+    for _ in range(MAXIMO_ENVIOS + 1):
+        client.post(LEGAJOS, json={})
+
+    respuesta = client.post(RECUPERAR_ACCESO, json={"email": "ana@example.com"})
+
+    assert respuesta.status_code == 202
+
+
+def test_swagger_documenta_el_429_en_las_dos_rutas(client):
+    rutas = client.get("/api/openapi.json").json()["paths"]
+
+    assert "429" in rutas[LEGAJOS]["post"]["responses"]
+    assert "429" in rutas[RECUPERAR_ACCESO]["post"]["responses"]
