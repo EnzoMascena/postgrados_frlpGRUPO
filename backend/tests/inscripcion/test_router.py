@@ -55,7 +55,7 @@ def formulario(cohorte, carrera) -> dict:
         "telefonoMovil": "+54 221 4567890",
         "telefonoFijo": None,
         "email": "Ana.Rodriguez@Example.com",
-        "emailAlternativo": None,
+        "emailAlternativo": "ana.trabajo@example.com",
         "domicilio": "Av. 7 Nro. 1234",
         "ciudad": "La Plata",
         "provincia": "Buenos Aires",
@@ -181,17 +181,12 @@ def test_el_mismo_dni_en_otra_cohorte_se_acepta(client, session, formulario):
 @pytest.mark.parametrize("en_blanco", ["", "   "])
 def test_un_opcional_en_blanco_se_guarda_como_none(client, session, formulario, en_blanco):
     # Si el título de posgrado quedara como "", el envío y el detalle le pedirían su copia.
-    opcionales = {"telefonoFijo": en_blanco, "emailAlternativo": en_blanco}
-    opcionales["tituloPosgrado"] = en_blanco
+    opcionales = {"telefonoFijo": en_blanco, "tituloPosgrado": en_blanco}
 
     cuerpo = client.post(LEGAJOS, json={**formulario, **opcionales}).json()
 
     legajo = session.get(LegajoORM, cuerpo["legajoId"])
-    assert (legajo.telefono_fijo, legajo.email_alternativo, legajo.titulo_posgrado) == (
-        None,
-        None,
-        None,
-    )
+    assert (legajo.telefono_fijo, legajo.titulo_posgrado) == (None, None)
 
 
 @pytest.mark.parametrize(
@@ -205,6 +200,8 @@ def test_un_opcional_en_blanco_se_guarda_como_none(client, session, formulario, 
         ({"dni": "28-456-789"}, "dni"),
         ({"email": "no-es-un-email"}, "email"),
         ({"emailAlternativo": "tampoco"}, "emailAlternativo"),
+        ({"emailAlternativo": None}, "emailAlternativo"),
+        ({"emailAlternativo": ""}, "emailAlternativo"),
         ({"telefonoMovil": ""}, "telefonoMovil"),
         ({"telefonoMovil": "a"}, "telefonoMovil"),
         ({"telefonoMovil": "1234567"}, "telefonoMovil"),
@@ -254,6 +251,18 @@ def test_el_422_le_dice_al_aspirante_que_regla_no_cumple(client, formulario, cam
     assert (respuesta.status_code, respuesta.json()["message"]) == (422, mensaje)
 
 
+def test_sin_email_alternativo_da_422_porque_es_obligatorio(client, session, formulario):
+    sin_email_alternativo = {
+        campo: valor for campo, valor in formulario.items() if campo != "emailAlternativo"
+    }
+
+    respuesta = client.post(LEGAJOS, json=sin_email_alternativo)
+
+    assert (respuesta.status_code, respuesta.json()["field"]) == (422, "emailAlternativo")
+    assert respuesta.json()["message"] == "El campo emailAlternativo es obligatorio"
+    assert legajos_guardados(session) == []
+
+
 def test_dos_carreras_iguales_dan_su_mensaje_en_422(client, formulario, carrera):
     respuesta = client.post(LEGAJOS, json={**formulario, "carreraIds": [str(carrera.id)] * 2})
 
@@ -287,6 +296,7 @@ def test_si_la_base_frena_un_dni_repetido_se_responde_el_mismo_409(session, coho
             "dni": "28456789",
             "telefonoMovil": "221 4567890",
             "email": "nueva@example.com",
+            "emailAlternativo": "nueva.trabajo@example.com",
             "domicilio": "Calle 1",
             "ciudad": "La Plata",
             "provincia": "Buenos Aires",

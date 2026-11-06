@@ -62,7 +62,8 @@ class InscripcionRequest(CamelModel):
     telefono_movil: str = Field(min_length=1, max_length=30)
     telefono_fijo: str | None = Field(default=None, max_length=30)
     email: EmailStr = Field(max_length=255)
-    email_alternativo: EmailStr | None = Field(default=None, max_length=255)
+    # Obligatorio: lo pide el SRS (campos obligatorios) y el contrato del plan §10.
+    email_alternativo: EmailStr = Field(max_length=255)
     domicilio: str = Field(min_length=1, max_length=255)
     ciudad: str = Field(min_length=1, max_length=100)
     provincia: str = Field(min_length=1, max_length=100)
@@ -75,7 +76,7 @@ class InscripcionRequest(CamelModel):
     # validate_default: el control de abajo corre también cuando no viene en el JSON.
     tipo_beca: TipoBeca | None = Field(default=None, validate_default=True)
 
-    @field_validator("telefono_fijo", "email_alternativo", "titulo_posgrado", mode="before")
+    @field_validator("telefono_fijo", "titulo_posgrado", mode="before")
     @classmethod
     def opcional_vacio_es_none(cls, valor: object) -> object:
         # El formulario manda "" cuando el campo queda en blanco. Se guarda None: así
