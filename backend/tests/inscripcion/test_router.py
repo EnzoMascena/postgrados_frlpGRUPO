@@ -22,7 +22,11 @@ from src.inscripcion.infrastructure.orm_models import TokenSeguimientoORM
 from src.inscripcion.infrastructure.pg_repository import PgInscripcionRepository
 from src.inscripcion.presentation.dependencies import legajo_id_desde_token
 from src.inscripcion.presentation.router import pedir_link_nuevo
-from src.inscripcion.presentation.schemas import InscripcionRequest, RecuperarAccesoRequest
+from src.inscripcion.presentation.schemas import (
+    LARGO_MAXIMO_MOTIVACION,
+    InscripcionRequest,
+    RecuperarAccesoRequest,
+)
 from src.legajos.infrastructure.orm_models import LegajoCarreraORM, LegajoORM
 from src.shared.config import settings
 from src.shared.errors import Conflicto, NoEncontrado
@@ -55,7 +59,7 @@ def formulario(cohorte, carrera) -> dict:
         "telefonoMovil": "+54 221 4567890",
         "telefonoFijo": None,
         "email": "Ana.Rodriguez@Example.com",
-        "emailAlternativo": None,
+        "emailAlternativo": "ana.trabajo@example.com",
         "domicilio": "Av. 7 Nro. 1234",
         "ciudad": "La Plata",
         "provincia": "Buenos Aires",
@@ -181,17 +185,12 @@ def test_el_mismo_dni_en_otra_cohorte_se_acepta(client, session, formulario):
 @pytest.mark.parametrize("en_blanco", ["", "   "])
 def test_un_opcional_en_blanco_se_guarda_como_none(client, session, formulario, en_blanco):
     # Si el título de posgrado quedara como "", el envío y el detalle le pedirían su copia.
-    opcionales = {"telefonoFijo": en_blanco, "emailAlternativo": en_blanco}
-    opcionales["tituloPosgrado"] = en_blanco
+    opcionales = {"telefonoFijo": en_blanco, "tituloPosgrado": en_blanco}
 
     cuerpo = client.post(LEGAJOS, json={**formulario, **opcionales}).json()
 
     legajo = session.get(LegajoORM, cuerpo["legajoId"])
-    assert (legajo.telefono_fijo, legajo.email_alternativo, legajo.titulo_posgrado) == (
-        None,
-        None,
-        None,
-    )
+    assert (legajo.telefono_fijo, legajo.titulo_posgrado) == (None, None)
 
 
 @pytest.mark.parametrize(
@@ -205,12 +204,15 @@ def test_un_opcional_en_blanco_se_guarda_como_none(client, session, formulario, 
         ({"dni": "28-456-789"}, "dni"),
         ({"email": "no-es-un-email"}, "email"),
         ({"emailAlternativo": "tampoco"}, "emailAlternativo"),
+        ({"emailAlternativo": None}, "emailAlternativo"),
+        ({"emailAlternativo": ""}, "emailAlternativo"),
         ({"telefonoMovil": ""}, "telefonoMovil"),
         ({"telefonoMovil": "a"}, "telefonoMovil"),
         ({"telefonoMovil": "1234567"}, "telefonoMovil"),
         ({"telefonoMovil": "221 456 789a"}, "telefonoMovil"),
         ({"telefonoFijo": "abc"}, "telefonoFijo"),
         ({"motivacion": "Muy corta"}, "motivacion"),
+        ({"motivacion": "x" * (LARGO_MAXIMO_MOTIVACION + 1)}, "motivacion"),
         ({"comoConocio": "TELEVISION"}, "comoConocio"),
         ({"solicitaBeca": True, "tipoBeca": None}, "tipoBeca"),
         ({"solicitaBeca": False, "tipoBeca": "30"}, "tipoBeca"),
@@ -246,12 +248,44 @@ def test_un_telefono_con_8_numeros_o_mas_se_acepta_con_el_formato_que_sea(
         ({"telefonoMovil": "a"}, "Ingresá un teléfono de al menos 8 números, con código de área"),
         ({"solicitaBeca": True, "tipoBeca": None}, "Elegí el tipo de beca"),
         ({"solicitaBeca": False, "tipoBeca": "30"}, "Sin beca no corresponde un tipo de beca"),
+        ({"motivacion": "x" * 2001}, "La motivación puede tener hasta 2000 caracteres"),
     ],
 )
 def test_el_422_le_dice_al_aspirante_que_regla_no_cumple(client, formulario, cambio, mensaje):
     respuesta = client.post(LEGAJOS, json={**formulario, **cambio})
 
     assert (respuesta.status_code, respuesta.json()["message"]) == (422, mensaje)
+
+
+def test_sin_email_alternativo_da_422_porque_es_obligatorio(client, session, formulario):
+    sin_email_alternativo = {
+        campo: valor for campo, valor in formulario.items() if campo != "emailAlternativo"
+    }
+
+    respuesta = client.post(LEGAJOS, json=sin_email_alternativo)
+
+    assert (respuesta.status_code, respuesta.json()["field"]) == (422, "emailAlternativo")
+    assert respuesta.json()["message"] == "El campo emailAlternativo es obligatorio"
+    assert legajos_guardados(session) == []
+
+
+def test_una_motivacion_de_justo_2000_caracteres_se_acepta(client, formulario):
+    motivacion = "x" * LARGO_MAXIMO_MOTIVACION
+
+    respuesta = client.post(LEGAJOS, json={**formulario, "motivacion": motivacion})
+
+    assert respuesta.status_code == 201
+
+
+def test_los_espacios_de_los_bordes_de_la_motivacion_no_cuentan_porque_no_se_guardan(
+    client, session, formulario
+):
+    motivacion = "   " + "x" * LARGO_MAXIMO_MOTIVACION + "   "
+
+    cuerpo = client.post(LEGAJOS, json={**formulario, "motivacion": motivacion}).json()
+
+    legajo = session.get(LegajoORM, cuerpo["legajoId"])
+    assert len(legajo.motivacion) == LARGO_MAXIMO_MOTIVACION
 
 
 def test_dos_carreras_iguales_dan_su_mensaje_en_422(client, formulario, carrera):
@@ -287,6 +321,7 @@ def test_si_la_base_frena_un_dni_repetido_se_responde_el_mismo_409(session, coho
             "dni": "28456789",
             "telefonoMovil": "221 4567890",
             "email": "nueva@example.com",
+            "emailAlternativo": "nueva.trabajo@example.com",
             "domicilio": "Calle 1",
             "ciudad": "La Plata",
             "provincia": "Buenos Aires",

@@ -16,6 +16,9 @@ from src.legajos.domain.estados import EstadoLegajo
 from src.shared.schemas import CamelModel
 
 LARGO_MINIMO_MOTIVACION = 50
+# El endpoint es público y la columna es `text`: sin tope, cualquiera podría llenar la base con
+# pocos envíos. 2000, como el comentario del coordinador (`LARGO_MAXIMO_COMENTARIO`).
+LARGO_MAXIMO_MOTIVACION = 2000
 
 
 class InscripcionRequest(CamelModel):
@@ -62,7 +65,8 @@ class InscripcionRequest(CamelModel):
     telefono_movil: str = Field(min_length=1, max_length=30)
     telefono_fijo: str | None = Field(default=None, max_length=30)
     email: EmailStr = Field(max_length=255)
-    email_alternativo: EmailStr | None = Field(default=None, max_length=255)
+    # Obligatorio: lo pide el SRS (campos obligatorios) y el contrato del plan §10.
+    email_alternativo: EmailStr = Field(max_length=255)
     domicilio: str = Field(min_length=1, max_length=255)
     ciudad: str = Field(min_length=1, max_length=100)
     provincia: str = Field(min_length=1, max_length=100)
@@ -75,7 +79,7 @@ class InscripcionRequest(CamelModel):
     # validate_default: el control de abajo corre también cuando no viene en el JSON.
     tipo_beca: TipoBeca | None = Field(default=None, validate_default=True)
 
-    @field_validator("telefono_fijo", "email_alternativo", "titulo_posgrado", mode="before")
+    @field_validator("telefono_fijo", "titulo_posgrado", mode="before")
     @classmethod
     def opcional_vacio_es_none(cls, valor: object) -> object:
         # El formulario manda "" cuando el campo queda en blanco. Se guarda None: así
@@ -109,6 +113,17 @@ class InscripcionRequest(CamelModel):
     def email_en_minusculas(cls, valor: str | None) -> str | None:
         # Así "Ana@Mail.com" y "ana@mail.com" son el mismo email en la cohorte.
         return valor.lower() if valor else valor
+
+    @field_validator("motivacion")
+    @classmethod
+    def motivacion_con_tope(cls, valor: str) -> str:
+        # Llega sin los espacios de los bordes (`str_strip_whitespace`): se cuenta el mismo texto
+        # que se guarda.
+        if len(valor) > LARGO_MAXIMO_MOTIVACION:
+            raise ValueError(
+                f"La motivación puede tener hasta {LARGO_MAXIMO_MOTIVACION} caracteres"
+            )
+        return valor
 
     @field_validator("carrera_ids")
     @classmethod
