@@ -136,6 +136,7 @@ Con `npm run dev` el proxy de Vite manda `/api` a `http://localhost:8000`, es de
 | `port is already allocated` o `address already in use` | Otro programa o un contenedor de otra materia usa el 3000, 8000, 5432, 1025 u 8025. Con `docker ps` ves qué contenedores están corriendo; frenalos con `docker stop <nombre>`. |
 | `failed to connect to the docker API` | Docker Desktop no está abierto. Abrilo y esperá a que diga que el motor está corriendo. |
 | Al correr el back fuera de Docker falla con `ValidationError ... jwt_secret` | Falta el `.env` en la raíz del repo o su `JWT_SECRET` tiene menos de 32 caracteres. Copiá `.env.example` otra vez. (Con Docker no pasa: el compose trae un valor de desarrollo.) |
+| El formulario o "pedir un link nuevo" responden 429 `RATE_LIMITED` | Hubo más de 10 envíos en la última hora desde la misma IP (NFR-S06). En desarrollo todo el front llega con la IP del proxy de Vite, así que el límite es por máquina. Esperá lo que dice el mensaje o reiniciá el back, porque los contadores están en memoria: `docker compose restart backend`. |
 | Querés empezar de cero | `docker compose down -v` y después `docker compose up --build`. |
 
 ---
