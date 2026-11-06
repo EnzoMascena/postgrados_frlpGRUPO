@@ -33,6 +33,7 @@ Este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 - Formulario de inscripción conectado a la API: validación en tiempo real, guarda el borrador con `POST /legajos`, muestra los errores del back al lado de cada campo y permite pedir un link nuevo
 - Retro del hito 1 en `docs/retros/2026-11-01.md`
 - Cambio de estado del legajo con `ServicioEstados`: valida la transición, genera el número de legajo sin repetirlo, guarda la auditoría y manda el email de cada acción (incluido el aviso de vencimiento a los coordinadores). Detalle del legajo con checklist de documentos, historial y acciones permitidas: `GET /legajos/{id}` y `PATCH /legajos/{id}/estado` para el coordinador
+- PDFs del aspirante: `POST /seguimiento/{token}/documentos` acepta solo PDFs reales (por sus primeros bytes) de hasta 5 MB y del tipo que le corresponde, los guarda en disco con nombre UUID y SHA-256 y reemplaza al anterior del mismo tipo; descargas del aspirante (solo de su legajo) y del coordinador sin caché, y `GET /seguimiento/{token}` con el detalle del aspirante (ADR-002)
 - Dashboard del coordinador conectado a la API: selector de cohorte, abrir y cerrar el período con la próxima apertura, tarjetas del resumen, tabla de legajos con búsqueda por DNI o apellido, filtros por estado, carrera y beca y páginas de 20, y el menú lateral usable en el celular
 
 ### Changed

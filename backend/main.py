@@ -8,7 +8,9 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from src.autenticacion.presentation.router import router as autenticacion_router
 from src.cohortes.presentation.router import router as cohortes_router
+from src.gestion_documental.presentation.router import router as gestion_documental_router
 from src.inscripcion.presentation.router import router as inscripcion_router
+from src.inscripcion.presentation.seguimiento import router as seguimiento_router
 from src.legajos.presentation.router import router as legajos_router
 from src.shared.config import settings
 from src.shared.error_handlers import registrar_manejadores_de_errores
@@ -46,7 +48,8 @@ app.include_router(health_router, prefix="/api/v1")
 app.include_router(autenticacion_router, prefix="/api/v1")  # Luca (L1)
 app.include_router(cohortes_router, prefix="/api/v1")  # Fran (F2)
 app.include_router(inscripcion_router, prefix="/api/v1")  # Fran (F4)
+app.include_router(seguimiento_router, prefix="/api/v1")  # Fran (F5)
+app.include_router(gestion_documental_router, prefix="/api/v1")  # Fran (F5)
 app.include_router(legajos_router, prefix="/api/v1")  # Luca (L3)
 
 # Acá suma su router cada dueño, con prefix="/api/v1", una línea por módulo:
-# app.include_router(gestion_documental_router, prefix="/api/v1")   # Fran (F5)
