@@ -1,14 +1,17 @@
 """`POST /legajos`, `POST /legajos/recuperar-acceso` y el link de seguimiento, contra la app real
 y la base de test."""
 
+import asyncio
 import hashlib
 import re
 from datetime import date, timedelta
 from uuid import uuid4
 
 import pytest
+from fastapi import BackgroundTasks
 from sqlmodel import select
 
+from src.inscripcion.application.recuperar_acceso import MENSAJE_RECUPERAR_ACCESO
 from src.inscripcion.domain.inscripcion import (
     MENSAJE_DNI_REPETIDO,
     MENSAJE_EMAIL_REPETIDO,
@@ -18,7 +21,8 @@ from src.inscripcion.infrastructure.links import crear_link_seguimiento
 from src.inscripcion.infrastructure.orm_models import TokenSeguimientoORM
 from src.inscripcion.infrastructure.pg_repository import PgInscripcionRepository
 from src.inscripcion.presentation.dependencies import legajo_id_desde_token
-from src.inscripcion.presentation.schemas import InscripcionRequest
+from src.inscripcion.presentation.router import pedir_link_nuevo
+from src.inscripcion.presentation.schemas import InscripcionRequest, RecuperarAccesoRequest
 from src.legajos.infrastructure.orm_models import LegajoCarreraORM, LegajoORM
 from src.shared.config import settings
 from src.shared.errors import Conflicto, NoEncontrado
@@ -202,6 +206,10 @@ def test_un_opcional_en_blanco_se_guarda_como_none(client, session, formulario, 
         ({"email": "no-es-un-email"}, "email"),
         ({"emailAlternativo": "tampoco"}, "emailAlternativo"),
         ({"telefonoMovil": ""}, "telefonoMovil"),
+        ({"telefonoMovil": "a"}, "telefonoMovil"),
+        ({"telefonoMovil": "1234567"}, "telefonoMovil"),
+        ({"telefonoMovil": "221 456 789a"}, "telefonoMovil"),
+        ({"telefonoFijo": "abc"}, "telefonoFijo"),
         ({"motivacion": "Muy corta"}, "motivacion"),
         ({"comoConocio": "TELEVISION"}, "comoConocio"),
         ({"solicitaBeca": True, "tipoBeca": None}, "tipoBeca"),
@@ -218,6 +226,38 @@ def test_un_campo_que_no_cumple_su_regla_da_422_con_el_campo(
     assert respuesta.json()["error"] == "VALIDATION_ERROR"
     assert respuesta.json()["field"] == campo
     assert legajos_guardados(session) == []
+
+
+@pytest.mark.parametrize("telefono", ["+54 221 4567890", "(0221) 456-7890", "22145678"])
+def test_un_telefono_con_8_numeros_o_mas_se_acepta_con_el_formato_que_sea(
+    client, formulario, telefono
+):
+    cambio = {"telefonoMovil": telefono, "telefonoFijo": telefono}
+
+    respuesta = client.post(LEGAJOS, json={**formulario, **cambio})
+
+    assert respuesta.status_code == 201
+
+
+@pytest.mark.parametrize(
+    ("cambio", "mensaje"),
+    [
+        ({"dni": "123456"}, "El DNI tiene que tener 7 u 8 dígitos"),
+        ({"telefonoMovil": "a"}, "Ingresá un teléfono de al menos 8 números, con código de área"),
+        ({"solicitaBeca": True, "tipoBeca": None}, "Elegí el tipo de beca"),
+        ({"solicitaBeca": False, "tipoBeca": "30"}, "Sin beca no corresponde un tipo de beca"),
+    ],
+)
+def test_el_422_le_dice_al_aspirante_que_regla_no_cumple(client, formulario, cambio, mensaje):
+    respuesta = client.post(LEGAJOS, json={**formulario, **cambio})
+
+    assert (respuesta.status_code, respuesta.json()["message"]) == (422, mensaje)
+
+
+def test_dos_carreras_iguales_dan_su_mensaje_en_422(client, formulario, carrera):
+    respuesta = client.post(LEGAJOS, json={**formulario, "carreraIds": [str(carrera.id)] * 2})
+
+    assert respuesta.json()["message"] == "Las dos carreras tienen que ser distintas"
 
 
 def test_una_carrera_inactiva_da_422(client, session, formulario):
@@ -285,6 +325,23 @@ def test_recuperar_acceso_manda_un_link_nuevo_que_sirve(client, session, formula
     assert len(session.exec(select(TokenSeguimientoORM)).all()) == 2
 
 
+def test_recuperar_acceso_deja_el_email_para_despues_de_responder(
+    session, cohorte, carrera, bandeja
+):
+    # Armar y mandar el email es lo más lento del request: si saliera dentro de él, la demora
+    # delataría que el email existe. Se llama a la función directo porque TestClient corre las
+    # tareas antes de devolver la respuesta y no deja ver la diferencia.
+    crear_legajo(session, cohorte, [carrera], email="ana@example.com")
+    tareas = BackgroundTasks()
+
+    respuesta = pedir_link_nuevo(RecuperarAccesoRequest(email="ana@example.com"), tareas, session)
+
+    assert respuesta.mensaje == MENSAJE_RECUPERAR_ACCESO
+    assert bandeja == []
+    asyncio.run(tareas())  # lo que hace Starlette una vez enviada la respuesta
+    assert [email.destinatario for email in bandeja] == ["ana@example.com"]
+
+
 def test_recuperar_acceso_usa_el_legajo_mas_reciente(client, session, formulario, bandeja):
     client.post(LEGAJOS, json=formulario)
     otra_cohorte = crear_cohorte(session, anio=2027)
@@ -335,3 +392,18 @@ def test_un_token_vencido_da_404(session, cohorte, carrera):
 
     with pytest.raises(NoEncontrado):
         legajo_id_desde_token(token, session)
+
+
+# --- Swagger ---
+
+
+def test_swagger_aclara_de_donde_salen_los_ids_y_da_los_dos_ejemplos_de_409(client):
+    documentacion = client.get("/api/openapi.json").json()["paths"][LEGAJOS]["post"]
+
+    assert "GET /cohortes" in documentacion["description"]
+    assert "GET /carreras" in documentacion["description"]
+    ejemplos = documentacion["responses"]["409"]["content"]["application/json"]["examples"]
+    assert {ejemplo["value"]["error"] for ejemplo in ejemplos.values()} == {
+        "CONFLICT",
+        "PERIODO_CERRADO",
+    }
