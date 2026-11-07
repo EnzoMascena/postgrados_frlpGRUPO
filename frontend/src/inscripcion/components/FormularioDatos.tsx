@@ -54,7 +54,13 @@ import {
   type DatosInscripcion,
   type Errores,
 } from '../types'
-import { MAXIMO_CARRERAS, MOTIVACION_MINIMA, validarCampo, validarFormulario } from '../validaciones'
+import {
+  MAXIMO_CARRERAS,
+  MOTIVACION_MAXIMA,
+  MOTIVACION_MINIMA,
+  validarCampo,
+  validarFormulario,
+} from '../validaciones'
 
 type Props = {
   valoresIniciales?: DatosInscripcion
@@ -398,11 +404,12 @@ export default function FormularioDatos({
                   .filter(Boolean)
                   .join(' ')}
                 rows={4}
+                maxLength={MOTIVACION_MAXIMA}
                 placeholder="Describí brevemente tus motivaciones…"
               />
               <p id={idContador} className="text-[12px] text-muted">
                 {largoMotivacion >= MOTIVACION_MINIMA
-                  ? `${largoMotivacion} caracteres ✓`
+                  ? `${largoMotivacion} / ${MOTIVACION_MAXIMA}`
                   : `${largoMotivacion} de ${MOTIVACION_MINIMA} caracteres mínimos`}
               </p>
             </Field>
