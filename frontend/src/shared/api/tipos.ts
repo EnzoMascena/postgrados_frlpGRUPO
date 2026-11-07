@@ -130,7 +130,7 @@ export type LegajoDetalle = {
   telefonoMovil: string
   telefonoFijo: string | null
   email: string
-  emailAlternativo: string
+  emailAlternativo: string | null
   domicilio: string
   ciudad: string
   provincia: string
