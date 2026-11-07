@@ -59,6 +59,7 @@ import PeriodoToggle from '../components/PeriodoToggle'
 import CerrarInscripcion from '../components/CerrarInscripcion'
 import { useCambiarPeriodo, useLegajos, useResumen } from '../hooks/useDashboard'
 import { useDemorado } from '../hooks/useDemorado'
+import { useExportar } from '../hooks/useExportar'
 import type { FiltrosLegajos } from '../api'
 
 const TAMANIO_PAGINA = 20
@@ -137,17 +138,11 @@ export default function Dashboard() {
   const { q } = interpretarBusqueda(buscado)
   const { aviso } = interpretarBusqueda(busqueda)
 
-  const legajos = useLegajos(
-    cohorte && {
-      cohorte: cohorte.id,
-      q,
-      estado,
-      carrera,
-      beca,
-      page: pagina,
-      size: TAMANIO_PAGINA,
-    },
-  )
+  // Los mismos filtros arman la página de la tabla y el Excel: lo que
+  // se exporta es lo que se está viendo, pero sin cortar en 20.
+  const filtros = cohorte && { cohorte: cohorte.id, q, estado, carrera, beca }
+  const legajos = useLegajos(filtros && { ...filtros, page: pagina, size: TAMANIO_PAGINA })
+  const exportar = useExportar()
   const filas = legajos.data?.items ?? []
   const total = legajos.data?.total ?? 0
   const hayAnterior = pagina > 1
@@ -279,8 +274,13 @@ export default function Dashboard() {
               <IconUsers size={15} stroke={1.5} />
               Inscriptos — {cohorte?.nombre}
             </div>
-            <Button>
-              <IconDownload size={15} stroke={1.5} /> Exportar
+            <Button
+              onClick={() => filtros && exportar.mutate(filtros)}
+              disabled={!filtros || exportar.isPending}
+              className="disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <IconDownload size={15} stroke={1.5} />
+              {exportar.isPending ? 'Exportando…' : 'Exportar'}
             </Button>
           </div>
 
@@ -356,6 +356,11 @@ export default function Dashboard() {
           {legajos.error && (
             <Alerta variant="danger" className="mb-3.5">
               No se pudieron cargar los inscriptos. {legajos.error.message}
+            </Alerta>
+          )}
+          {exportar.error && (
+            <Alerta variant="danger" className="mb-3.5">
+              No se pudo exportar. {exportar.error.message}
             </Alerta>
           )}
 
