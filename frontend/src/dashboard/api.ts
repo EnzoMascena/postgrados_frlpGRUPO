@@ -19,7 +19,7 @@
    hooks de hooks/useDashboard.ts (TanStack Query).
    ═══════════════════════════════════════════════════════════════ */
 
-import { apiFetch } from '../shared/api/client'
+import { apiDescargar, apiFetch } from '../shared/api/client'
 import type {
   Cohorte,
   EstadoLegajo,
@@ -39,13 +39,28 @@ export type FiltrosLegajos = {
   size: number
 }
 
-/** GET /legajos: los más nuevos primero. Solo van los filtros que tienen valor. */
-export function listarLegajos(filtros: FiltrosLegajos): Promise<Paginado<LegajoItem>> {
+/** Los filtros como query string. Solo van los que tienen valor. */
+function aParametros(filtros: Partial<FiltrosLegajos>): URLSearchParams {
   const params = new URLSearchParams()
   for (const [clave, valor] of Object.entries(filtros)) {
-    if (valor !== null && valor !== '') params.set(clave, String(valor))
+    if (valor !== null && valor !== undefined && valor !== '') params.set(clave, String(valor))
   }
-  return apiFetch<Paginado<LegajoItem>>(`/legajos?${params}`)
+  return params
+}
+
+/** GET /legajos: los más nuevos primero. */
+export function listarLegajos(filtros: FiltrosLegajos): Promise<Paginado<LegajoItem>> {
+  return apiFetch<Paginado<LegajoItem>>(`/legajos?${aParametros(filtros)}`)
+}
+
+/** Lo que manda Exportar: los mismos filtros que la tabla, sin página. */
+export type FiltrosExportar = Omit<FiltrosLegajos, 'page' | 'size'>
+
+/** GET /legajos/exportar (L5, Luca): el .xlsx con TODOS los legajos que
+    cumplen los filtros, no solo los 20 de la página. Devuelve el archivo
+    y el nombre que manda el back (inscriptos-cohorte2026-2026-11-08.xlsx). */
+export function exportarLegajos(filtros: FiltrosExportar) {
+  return apiDescargar(`/legajos/exportar?${aParametros(filtros)}`)
 }
 
 /** GET /legajos/resumen: total, cantidad por estado y becas de la cohorte. */
