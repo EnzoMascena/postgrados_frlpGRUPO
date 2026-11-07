@@ -37,6 +37,7 @@ Este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 - Búsqueda de legajos para el dashboard del coordinador: `GET /legajos` busca por DNI exacto o parte del apellido (sin distinguir mayúsculas, con los comodines `%` y `_` tomados literales), filtra por estado, cohorte, carrera y beca, pagina con los más nuevos primero y cuenta los documentos cargados de los requeridos; `GET /legajos/resumen` da el total, los 10 estados y las becas por tipo, con cohorte opcional
 - PDFs del aspirante: `POST /seguimiento/{token}/documentos` acepta solo PDFs reales (por sus primeros bytes) de hasta 5 MB y del tipo que le corresponde, los guarda en disco con nombre UUID y SHA-256 y reemplaza al anterior del mismo tipo; descargas del aspirante (solo de su legajo) y del coordinador sin caché, y `GET /seguimiento/{token}` con el detalle del aspirante (ADR-002)
 - Dashboard del coordinador conectado a la API: selector de cohorte, abrir y cerrar el período con la próxima apertura, tarjetas del resumen, tabla de legajos con búsqueda por DNI o apellido, filtros por estado, carrera y beca y páginas de 20, y el menú lateral usable en el celular
+- Botón Exportar del dashboard: descarga el Excel de `GET /legajos/exportar` con los mismos filtros que la tabla y el nombre de archivo que manda el back, y el seed suma PDFs de ejemplo a los legajos enviados (al OBSERVADO le falta el título de grado)
 
 ### Changed
 - `docker-compose.yml` y `.env.example` reemplazan las plantillas viejas de Node
