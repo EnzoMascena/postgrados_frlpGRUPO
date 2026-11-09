@@ -1,6 +1,6 @@
 # Guía de uso · Sistema de Posgrado UTN FRLP
 
-> **Borrador (9/11).** Los pasos del aspirante están completos: enviar, editar y reenviar se sacaron con F6 (#59) y G4 (#63). Exportar (🚧) se completa cuando entre L5 (Excel).
+> **Al 9/11.** Enviar, editar y reenviar (aspirante) usan G4 (#63), y exportar a Excel (coordinador) usa L5 (#66) y D6 (#61): las capturas se sacaron con esas ramas, que esperan merge.
 
 Para levantarlo: `docker compose up --build` y entrar a http://localhost:3000. Los emails de prueba llegan a MailHog: http://localhost:8025.
 
@@ -134,6 +134,8 @@ Cuando el aspirante se matricula, en el legajo Completado tocás "Matricular" y 
 
 ![Confirmar la matrícula](guia/coordinador-10-matricular.jpg)
 
-### Pendientes 🚧
+### 11. Exportar a Excel
 
-- Exportar a Excel (L5).
+Con la búsqueda y los filtros que quieras, tocás "Exportar" y se baja `inscriptos-cohorte2026-AAAA-MM-DD.xlsx` con los mismos legajos de la tabla.
+
+![Botón Exportar del dashboard](guia/coordinador-11-exportar.jpg)
