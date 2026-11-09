@@ -11,17 +11,27 @@ from src.cohortes.presentation.router import router as cohortes_router
 from src.gestion_documental.presentation.router import router as gestion_documental_router
 from src.inscripcion.presentation.router import router as inscripcion_router
 from src.inscripcion.presentation.seguimiento import router as seguimiento_router
+from src.legajos.infrastructure.job_vencimiento import iniciar_programador
 from src.legajos.presentation.router import router as legajos_router
 from src.shared.config import settings
 from src.shared.error_handlers import registrar_manejadores_de_errores
 from src.shared.health import router as health_router
+from src.shared.logs import instalar_filtro_de_tokens
 from src.shared.security_headers import SecurityHeadersMiddleware
+
+# uvicorn configura sus logs antes de importar este archivo: el filtro queda puesto para todo
+# pedido, también con `--reload`.
+instalar_filtro_de_tokens()
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-    # acá se engancha la tarea de vencimiento (E6)
+    # La tarea de vencimiento corre todos los días a las 3:00 dentro de este proceso (E6, ADR-007).
+    # En los tests no se programa: se prueba llamando a la tarea directamente.
+    programador = None if settings.environment == "testing" else iniciar_programador()
     yield
+    if programador is not None:
+        programador.shutdown()  # espera a que termine una corrida en curso
 
 
 app = FastAPI(
