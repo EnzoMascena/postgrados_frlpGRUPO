@@ -4,6 +4,7 @@
 todo queda dentro de la transacción del test y se deshace al terminar (ver conftest).
 """
 
+import hashlib
 from dataclasses import replace
 from datetime import UTC, datetime
 
@@ -16,6 +17,11 @@ from scripts.seed import cargar_datos
 from src.autenticacion.infrastructure.hashing import verificar_password
 from src.autenticacion.infrastructure.orm_models import UsuarioORM
 from src.cohortes.infrastructure.orm_models import CarreraORM, CohorteORM
+from src.gestion_documental.domain.pdf import validar_pdf
+from src.gestion_documental.domain.requisitos import documentos_requeridos
+from src.gestion_documental.domain.tipos import TipoDocumento
+from src.gestion_documental.infrastructure.almacenamiento import ruta_del_pdf
+from src.gestion_documental.infrastructure.orm_models import DocumentoORM
 from src.legajos.domain.estados import EstadoLegajo, TransicionInvalida
 from src.legajos.infrastructure.orm_models import (
     AuditoriaLegajoORM,
@@ -29,7 +35,16 @@ from src.shared.roles import Rol
 EMAIL_COORDINADOR = "coordinador.seed@example.com"
 CLAVE_COORDINADOR = "ClaveDelSeed1234!"
 
-TABLAS = (CarreraORM, CohorteORM, UsuarioORM, LegajoORM, LegajoCarreraORM, AuditoriaLegajoORM)
+TABLAS = (
+    CarreraORM,
+    CohorteORM,
+    UsuarioORM,
+    LegajoORM,
+    LegajoCarreraORM,
+    AuditoriaLegajoORM,
+    DocumentoORM,
+)
+DOCUMENTOS_DEL_SEED = 53  # 10 legajos enviados × 5, 4 formularios de beca, 1 que falta
 
 
 @pytest.fixture(autouse=True)
@@ -58,12 +73,19 @@ def test_correrlo_dos_veces_no_duplica_nada(session):
     segunda = cargar_datos(session)
     session.commit()
 
-    resumen = {"carreras": 3, "cohortes": 3, "coordinadores": 1, "legajos": 11}
-    assert primera == {**resumen, "nuevos": 18}
+    resumen = {
+        "carreras": 3,
+        "cohortes": 3,
+        "coordinadores": 1,
+        "legajos": 11,
+        "documentos": DOCUMENTOS_DEL_SEED,
+    }
+    assert primera == {**resumen, "nuevos": 18 + DOCUMENTOS_DEL_SEED}
     assert segunda == {**resumen, "nuevos": 0}
     assert _contar_filas(session) == filas
     assert filas["legajos"] == 11
     assert filas["legajo_carreras"] == 11
+    assert filas["documentos"] == DOCUMENTOS_DEL_SEED
 
 
 def test_el_coordinador_entra_con_la_clave_de_la_configuracion(session):
@@ -131,6 +153,58 @@ def test_los_matriculados_tienen_numero_y_las_tres_fechas(session):
     for legajo in activos:
         assert legajo.fecha_inscripcion < legajo.fecha_aprobacion < legajo.fecha_activacion
     assert _legajo(session, "López").numero_legajo is None  # PENDIENTE: sin número todavía
+
+
+def test_los_legajos_enviados_tienen_sus_pdfs_y_al_observado_le_falta_uno(session):
+    cargar_datos(session)
+    session.commit()
+
+    for legajo in session.exec(select(LegajoORM)).all():
+        documentos = session.exec(
+            select(DocumentoORM).where(DocumentoORM.legajo_id == legajo.id)
+        ).all()
+        tipos = {TipoDocumento(d.tipo) for d in documentos}
+        requeridos = set(documentos_requeridos(legajo.solicita_beca, tiene_titulo_posgrado=False))
+        if legajo.estado == EstadoLegajo.BORRADOR:
+            assert tipos == set()
+        elif legajo.estado == EstadoLegajo.OBSERVADO:
+            assert tipos == requeridos - {TipoDocumento.TITULO_GRADO}
+        else:
+            assert tipos == requeridos
+
+        for documento in documentos:
+            contenido = ruta_del_pdf(documento.path_storage).read_bytes()
+            validar_pdf(contenido)  # el mismo control que una subida de verdad
+            assert len(contenido) == documento.tamanio_bytes
+            assert hashlib.sha256(contenido).hexdigest() == documento.checksum_sha256
+            assert documento.fecha_subida < legajo.fecha_inscripcion
+
+
+def test_el_pdf_de_prueba_tiene_la_tabla_xref_bien_armada():
+    pdf = seed._pdf_de_prueba("Copia del título de grado")
+
+    assert pdf.startswith(b"%PDF-1.4") and pdf.endswith(b"%%EOF\n")
+    assert "Documento de prueba · Copia del título de grado".encode("cp1252") in pdf
+    # Cada posición de la tabla xref apunta al comienzo de su objeto.
+    inicio_xref = int(pdf.rsplit(b"startxref\n", 1)[1].split(b"\n")[0])
+    filas = pdf[inicio_xref:].split(b"\n")[3:8]
+    for numero, fila in enumerate(filas, start=1):
+        assert pdf[int(fila[:10]) :].startswith(b"%d 0 obj" % numero)
+
+
+def test_una_base_con_el_seed_viejo_recibe_los_pdfs_sin_duplicar_legajos(session):
+    cargar_datos(session)
+    session.commit()
+    # Así quedaba una base cargada antes de que el seed subiera documentos.
+    for documento in session.exec(select(DocumentoORM)).all():
+        session.delete(documento)
+    session.commit()
+
+    resumen = cargar_datos(session)
+    session.commit()
+
+    assert resumen["nuevos"] == DOCUMENTOS_DEL_SEED
+    assert _contar_filas(session)["legajos"] == 11
 
 
 @pytest.mark.parametrize(
