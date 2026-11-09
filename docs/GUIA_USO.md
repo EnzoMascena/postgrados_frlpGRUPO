@@ -88,9 +88,14 @@ Buscás por DNI (con o sin puntos) o por apellido (3 letras como mínimo) y comb
 
 ![Búsqueda por apellido](guia/coordinador-03-buscar.png)
 
+### 4. Abrir y cerrar el período
+
+Con el interruptor "Período de inscripción" de arriba a la derecha abrís o cerrás la inscripción de la cohorte; al cerrarla podés poner la fecha de la próxima apertura, que el formulario le muestra al aspirante.
+
+![Cerrar la inscripción](guia/coordinador-04-periodo.jpg)
+
 ### Pendientes 🚧
 
 - Abrir un legajo y ver un PDF (D5).
 - Revisar, observar, aprobar y matricular (D5).
-- Abrir y cerrar el período de inscripción (el interruptor de arriba a la derecha del dashboard).
 - Exportar a Excel (L5).
