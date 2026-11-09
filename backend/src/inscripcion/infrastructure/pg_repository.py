@@ -1,6 +1,7 @@
 """`InscripcionRepository` con SQLModel: lee cohortes y carreras y guarda el legajo nuevo."""
 
 from collections.abc import Sequence
+from typing import Any
 from uuid import UUID
 
 from sqlalchemy.exc import IntegrityError
@@ -14,6 +15,7 @@ from src.inscripcion.domain.inscripcion import (
     MENSAJE_EMAIL_REPETIDO,
     DatosInscripcion,
     LegajoDelAspirante,
+    LegajoEnEdicion,
 )
 from src.legajos.domain.estados import EstadoLegajo
 from src.legajos.infrastructure.orm_models import LegajoCarreraORM, LegajoORM
@@ -39,43 +41,52 @@ class PgInscripcionRepository:
         )
         return set(self.session.exec(consulta))
 
-    def existe_dni(self, cohorte_id: UUID, dni: str) -> bool:
-        return self._existe(LegajoORM.cohorte_id == cohorte_id, LegajoORM.dni == dni)
+    def existe_dni(self, cohorte_id: UUID, dni: str, excepto: UUID | None = None) -> bool:
+        return self._existe(excepto, LegajoORM.cohorte_id == cohorte_id, LegajoORM.dni == dni)
 
-    def existe_email(self, cohorte_id: UUID, email: str) -> bool:
-        return self._existe(LegajoORM.cohorte_id == cohorte_id, LegajoORM.email == email)
+    def existe_email(self, cohorte_id: UUID, email: str, excepto: UUID | None = None) -> bool:
+        return self._existe(excepto, LegajoORM.cohorte_id == cohorte_id, LegajoORM.email == email)
 
-    def _existe(self, *condiciones) -> bool:
-        return self.session.exec(select(LegajoORM.id).where(*condiciones)).first() is not None
+    def _existe(self, excepto: UUID | None, *condiciones) -> bool:
+        consulta = select(LegajoORM.id).where(*condiciones)
+        if excepto is not None:
+            consulta = consulta.where(LegajoORM.id != excepto)
+        return self.session.exec(consulta).first() is not None
+
+    def legajo_en_edicion(self, legajo_id: UUID) -> LegajoEnEdicion | None:
+        fila = self.session.get(LegajoORM, legajo_id)
+        if fila is None:
+            return None
+        return LegajoEnEdicion(
+            id=fila.id, cohorte_id=fila.cohorte_id, estado=EstadoLegajo(fila.estado)
+        )
 
     def crear_legajo(self, datos: DatosInscripcion, codigo_seguimiento: str) -> UUID:
         legajo = LegajoORM(
             cohorte_id=datos.cohorte_id,
             codigo_seguimiento=codigo_seguimiento,
             estado=EstadoLegajo.BORRADOR.value,
-            apellido=datos.apellido,
-            nombre=datos.nombre,
-            nacionalidad=datos.nacionalidad,
-            dni=datos.dni,
-            telefono_movil=datos.telefono_movil,
-            telefono_fijo=datos.telefono_fijo,
-            email=datos.email,
-            email_alternativo=datos.email_alternativo,
-            domicilio=datos.domicilio,
-            ciudad=datos.ciudad,
-            provincia=datos.provincia,
-            pais=datos.pais,
-            titulo_grado=datos.titulo_grado,
-            titulo_posgrado=datos.titulo_posgrado,
-            como_conocio=datos.como_conocio.value,
-            motivacion=datos.motivacion,
-            solicita_beca=datos.solicita_beca,
-            tipo_beca=datos.tipo_beca.value if datos.tipo_beca else None,
+            **_campos_del_formulario(datos),
         )
+        self._guardar(legajo, datos.carrera_ids)
+        return legajo.id
+
+    def actualizar_legajo(self, legajo_id: UUID, datos: DatosInscripcion) -> None:
+        legajo = self.session.get_one(LegajoORM, legajo_id)
+        for campo, valor in _campos_del_formulario(datos).items():
+            setattr(legajo, campo, valor)
+        self._guardar(legajo, datos.carrera_ids)
+
+    def _guardar(self, legajo: LegajoORM, carrera_ids: Sequence[UUID]) -> None:
+        """Guarda el legajo con sus carreras en una transacción. Las carreras se reemplazan."""
         try:
             self.session.add(legajo)
             self.session.flush()  # el legajo tiene que existir antes que sus filas de carreras
-            for orden, carrera_id in enumerate(datos.carrera_ids, start=1):
+            anteriores = select(LegajoCarreraORM).where(LegajoCarreraORM.legajo_id == legajo.id)
+            for fila in self.session.exec(anteriores):
+                self.session.delete(fila)
+            self.session.flush()  # se borran antes de volver a usar orden 1 y 2
+            for orden, carrera_id in enumerate(carrera_ids, start=1):
                 self.session.add(
                     LegajoCarreraORM(legajo_id=legajo.id, orden=orden, carrera_id=carrera_id)
                 )
@@ -89,7 +100,6 @@ class PgInscripcionRepository:
                 raise
             campo, mensaje = repetido
             raise Conflicto(mensaje, campo=campo) from error
-        return legajo.id
 
     def buscar_ultimo_por_email(self, email: str) -> LegajoDelAspirante | None:
         consulta = (
@@ -106,3 +116,27 @@ class PgInscripcionRepository:
             email=fila.email,
             codigo_seguimiento=fila.codigo_seguimiento,
         )
+
+
+def _campos_del_formulario(datos: DatosInscripcion) -> dict[str, Any]:
+    """Las columnas de `legajos` que completa el aspirante: las mismas al crear y al editar."""
+    return {
+        "apellido": datos.apellido,
+        "nombre": datos.nombre,
+        "nacionalidad": datos.nacionalidad,
+        "dni": datos.dni,
+        "telefono_movil": datos.telefono_movil,
+        "telefono_fijo": datos.telefono_fijo,
+        "email": datos.email,
+        "email_alternativo": datos.email_alternativo,
+        "domicilio": datos.domicilio,
+        "ciudad": datos.ciudad,
+        "provincia": datos.provincia,
+        "pais": datos.pais,
+        "titulo_grado": datos.titulo_grado,
+        "titulo_posgrado": datos.titulo_posgrado,
+        "como_conocio": datos.como_conocio.value,
+        "motivacion": datos.motivacion,
+        "solicita_beca": datos.solicita_beca,
+        "tipo_beca": datos.tipo_beca.value if datos.tipo_beca else None,
+    }
