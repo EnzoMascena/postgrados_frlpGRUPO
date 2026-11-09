@@ -30,6 +30,7 @@ Este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 - Login del coordinador conectado a la API: errores del back en pantalla, "Recordarme", aviso de sesión vencida, rutas del coordinador protegidas por rol y cierre de sesión
 - README con cómo levantar el proyecto (URLs, usuario de prueba, comandos del día a día y problemas comunes en Windows), ADR-001 del stack y la forma de vincular un PR con su issue (`Closes #N`) en CONTRIBUTING
 - Inscripción del aspirante: `POST /legajos` crea el legajo en BORRADOR con su código de seguimiento y manda por email el link para continuar, y `POST /legajos/recuperar-acceso` manda uno nuevo; el link lleva un token de 32 bytes guardado como SHA-256 que vence a los 60 días (ADR-005)
+- Límite de envíos por IP (NFR-S06): hasta 10 por hora en `POST /legajos` y otros 10 en `POST /legajos/recuperar-acceso`; el siguiente responde 429 `RATE_LIMITED` con `Retry-After` y cuánto falta en el mensaje
 - Formulario de inscripción conectado a la API: validación en tiempo real, guarda el borrador con `POST /legajos`, muestra los errores del back al lado de cada campo y permite pedir un link nuevo
 - Retro del hito 1 en `docs/retros/2026-11-01.md`
 - Cambio de estado del legajo con `ServicioEstados`: valida la transición, genera el número de legajo sin repetirlo, guarda la auditoría y manda el email de cada acción (incluido el aviso de vencimiento a los coordinadores). Detalle del legajo con checklist de documentos, historial y acciones permitidas: `GET /legajos/{id}` y `PATCH /legajos/{id}/estado` para el coordinador
@@ -38,6 +39,10 @@ Este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 - Exportación a Excel de la búsqueda del coordinador: `GET /legajos/exportar` con los mismos filtros que el listado, sin paginar (hasta 5000), descarga `inscriptos-cohorte2026-AAAA-MM-DD.xlsx` (o `inscriptos-todas-…`) con encabezados en negrita, columnas ajustadas y filtro automático; lo que escribe el aspirante queda siempre como texto, nunca como fórmula
 - PDFs del aspirante: `POST /seguimiento/{token}/documentos` acepta solo PDFs reales (por sus primeros bytes) de hasta 5 MB y del tipo que le corresponde, los guarda en disco con nombre UUID y SHA-256 y reemplaza al anterior del mismo tipo; descargas del aspirante (solo de su legajo) y del coordinador sin caché, y `GET /seguimiento/{token}` con el detalle del aspirante (ADR-002)
 - Dashboard del coordinador conectado a la API: selector de cohorte, abrir y cerrar el período con la próxima apertura, tarjetas del resumen, tabla de legajos con búsqueda por DNI o apellido, filtros por estado, carrera y beca y páginas de 20, y el menú lateral usable en el celular
+- Detalle del legajo para el coordinador: datos, carreras y beca, documentación con vista previa del PDF (descargado con el token, sin URL directa), historial en hora argentina y las acciones permitidas (pasar a revisión, observar con comentario obligatorio, aprobar, rechazar, matricular y dar de baja) con su confirmación
+- Vencimiento de reservas: todos los días a las 3:00 (hora de Argentina) los legajos COMPLETADO con 30 días o más desde la aprobación pasan a VENCIDO, con auditoría del sistema y email a cada coordinador activo; se corre a mano con `uv run python -m src.legajos.infrastructure.job_vencimiento` (ADR-007)
+- Edición y envío del legajo desde el link del aspirante: `PUT /seguimiento/{token}` cambia los datos en BORRADOR u OBSERVADO con las mismas reglas que el formulario (DNI y email únicos sin contar al propio legajo, período abierto), y `POST /seguimiento/{token}/enviar` hace ENVIAR o CORREGIR con `ServicioEstados` solo si están todos los documentos obligatorios (si no, 422 `DOCUMENTOS_FALTANTES`)
+- Enviar y corregir desde la página de seguimiento: "Enviar a revisión" en Borrador y "Reenviar corrección" en Observado, deshabilitado con la lista de los documentos que faltan, confirmación en un modal y aviso de éxito; si el back responde `DOCUMENTOS_FALTANTES`, marca en rojo los que faltan. "Editar mis datos" abre el formulario de la inscripción con los datos actuales y guarda con `PUT /seguimiento/{token}`, con los errores del back al lado de cada campo
 
 ### Changed
 - `docker-compose.yml` y `.env.example` reemplazan las plantillas viejas de Node
@@ -50,6 +55,7 @@ Este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 - En `POST /legajos`, el teléfono fijo y el título de posgrado vacíos o con solo espacios se guardan como `null`: así no se pide la copia del título de posgrado a quien no lo tiene
 - En `POST /legajos`, el email alternativo es obligatorio, como piden el SRS y el contrato del plan (antes se aceptaba vacío o nulo), y la motivación puede tener hasta 2000 caracteres (antes no tenía tope y el endpoint es público)
 - En el formulario de inscripción, la motivación se frena en 2000 caracteres: el textarea no deja escribir más, el contador muestra "N / 2000" y la validación usa el mismo mensaje que el 422 del back
+- Los logs del back ya no guardan el token del link de seguimiento: el log de accesos y el de errores muestran `/seguimiento/***` (ADR-005)
 
 ---
 

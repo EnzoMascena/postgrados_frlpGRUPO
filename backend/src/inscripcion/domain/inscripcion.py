@@ -5,6 +5,7 @@ from datetime import date
 from uuid import UUID
 
 from src.inscripcion.domain.tipos import ComoConocio, TipoBeca
+from src.legajos.domain.estados import EstadoLegajo
 
 MENSAJE_DNI_REPETIDO = "Ya existe una preinscripción con este DNI para la cohorte actual"
 MENSAJE_EMAIL_REPETIDO = (
@@ -46,6 +47,15 @@ class LegajoDelAspirante:
     nombre: str
     email: str
     codigo_seguimiento: str
+
+
+@dataclass(frozen=True)
+class LegajoEnEdicion:
+    """Lo que hace falta saber del legajo para dejar editar sus datos (`PUT /seguimiento`)."""
+
+    id: UUID
+    cohorte_id: UUID
+    estado: EstadoLegajo
 
 
 def mensaje_periodo_cerrado(proxima_apertura: date | None) -> str:
