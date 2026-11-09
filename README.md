@@ -77,6 +77,7 @@ Son datos de prueba de la cátedra, no una clave real. El aspirante no tiene usu
 | `docker compose down` | Frena todo y conserva la base |
 | `docker compose down -v` | Frena todo y **borra la base**: el próximo `up --build` la recrea con el seed |
 | `docker compose up -d --build backend` | Reconstruye el back después de cambiar su código o sus dependencias (el back **no** monta el código en el contenedor) |
+| `docker compose exec backend uv run python -m src.legajos.infrastructure.job_vencimiento` | Corre ya el vencimiento de reservas, la tarea que corre sola todos los días a las 3:00 (ADR-007). El seed deja un legajo listo para vencer |
 
 El front monta `./frontend` en el contenedor: cuando cambiás el código, Vite recarga el navegador sin reconstruir. Si cambia `package.json`, usá `docker compose up -d --build -V frontend`.
 
@@ -97,6 +98,7 @@ uv run pytest                             # tests y cobertura (mínimo 70 %)
 uv run ruff check . && uv run ruff format --check .
 uv run alembic upgrade head               # aplica las migraciones
 uv run python -m scripts.seed             # carga los datos de prueba (se puede correr varias veces)
+uv run python -m src.legajos.infrastructure.job_vencimiento   # vence ya las reservas de 30 días o más
 ```
 
 Las migraciones nuevas: `uv run alembic revision --autogenerate -m "descripcion"`. Ojo: Alembic **no detecta los cambios en los `CHECK`**; esos hay que escribirlos a mano en la migración.

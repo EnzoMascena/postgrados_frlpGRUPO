@@ -38,6 +38,8 @@ Este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 - Búsqueda de legajos para el dashboard del coordinador: `GET /legajos` busca por DNI exacto o parte del apellido (sin distinguir mayúsculas, con los comodines `%` y `_` tomados literales), filtra por estado, cohorte, carrera y beca, pagina con los más nuevos primero y cuenta los documentos cargados de los requeridos; `GET /legajos/resumen` da el total, los 10 estados y las becas por tipo, con cohorte opcional
 - PDFs del aspirante: `POST /seguimiento/{token}/documentos` acepta solo PDFs reales (por sus primeros bytes) de hasta 5 MB y del tipo que le corresponde, los guarda en disco con nombre UUID y SHA-256 y reemplaza al anterior del mismo tipo; descargas del aspirante (solo de su legajo) y del coordinador sin caché, y `GET /seguimiento/{token}` con el detalle del aspirante (ADR-002)
 - Dashboard del coordinador conectado a la API: selector de cohorte, abrir y cerrar el período con la próxima apertura, tarjetas del resumen, tabla de legajos con búsqueda por DNI o apellido, filtros por estado, carrera y beca y páginas de 20, y el menú lateral usable en el celular
+- Vencimiento de reservas: todos los días a las 3:00 (hora de Argentina) los legajos COMPLETADO con 30 días o más desde la aprobación pasan a VENCIDO, con auditoría del sistema y email a cada coordinador activo; se corre a mano con `uv run python -m src.legajos.infrastructure.job_vencimiento` (ADR-007)
+- Edición y envío del legajo desde el link del aspirante: `PUT /seguimiento/{token}` cambia los datos en BORRADOR u OBSERVADO con las mismas reglas que el formulario (DNI y email únicos sin contar al propio legajo, período abierto), y `POST /seguimiento/{token}/enviar` hace ENVIAR o CORREGIR con `ServicioEstados` solo si están todos los documentos obligatorios (si no, 422 `DOCUMENTOS_FALTANTES`)
 
 ### Changed
 - `docker-compose.yml` y `.env.example` reemplazan las plantillas viejas de Node
@@ -47,7 +49,9 @@ Este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 - Ajustes de la inscripción tras la revisión del PR #44: el teléfono pide 8 números o más como el formulario, el 422 muestra el mensaje de cada regla en vez del genérico, Swagger aclara de dónde salen los ids y muestra el 409 de período cerrado, y recuperar acceso manda el email después de responder
 
 ### Fixed
-- En `POST /legajos`, el teléfono fijo, el email alternativo y el título de posgrado vacíos o con solo espacios se guardan como `null`: así no se pide la copia del título de posgrado a quien no lo tiene y un email alternativo en blanco ya no da 422
+- En `POST /legajos`, el teléfono fijo y el título de posgrado vacíos o con solo espacios se guardan como `null`: así no se pide la copia del título de posgrado a quien no lo tiene
+- En `POST /legajos`, el email alternativo es obligatorio, como piden el SRS y el contrato del plan (antes se aceptaba vacío o nulo), y la motivación puede tener hasta 2000 caracteres (antes no tenía tope y el endpoint es público)
+- En el formulario de inscripción, la motivación se frena en 2000 caracteres: el textarea no deja escribir más, el contador muestra "N / 2000" y la validación usa el mismo mensaje que el 422 del back
 
 ---
 
