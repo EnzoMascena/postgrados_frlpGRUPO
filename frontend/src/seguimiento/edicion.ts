@@ -28,7 +28,7 @@ export function datosDesdeLegajo(legajo: LegajoDetalle): DatosInscripcion {
     telefonoMovil: legajo.telefonoMovil,
     telefonoFijo: legajo.telefonoFijo ?? '',
     email: legajo.email,
-    emailAlternativo: legajo.emailAlternativo,
+    emailAlternativo: legajo.emailAlternativo ?? '',
     domicilio: legajo.domicilio,
     ciudad: legajo.ciudad,
     provincia: legajo.provincia,
