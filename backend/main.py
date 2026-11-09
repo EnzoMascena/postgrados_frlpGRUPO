@@ -16,7 +16,12 @@ from src.legajos.presentation.router import router as legajos_router
 from src.shared.config import settings
 from src.shared.error_handlers import registrar_manejadores_de_errores
 from src.shared.health import router as health_router
+from src.shared.logs import instalar_filtro_de_tokens
 from src.shared.security_headers import SecurityHeadersMiddleware
+
+# uvicorn configura sus logs antes de importar este archivo: el filtro queda puesto para todo
+# pedido, también con `--reload`.
+instalar_filtro_de_tokens()
 
 
 @asynccontextmanager
