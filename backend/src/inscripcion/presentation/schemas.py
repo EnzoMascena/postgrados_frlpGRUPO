@@ -21,41 +21,41 @@ LARGO_MINIMO_MOTIVACION = 50
 LARGO_MAXIMO_MOTIVACION = 2000
 
 
-class InscripcionRequest(CamelModel):
+_EJEMPLO_DATOS = {
+    "carreraIds": ["5d2f8a1b-3c4d-4e5f-9a0b-1c2d3e4f5a6b"],
+    "apellido": "Rodríguez",
+    "nombre": "Ana Laura",
+    "nacionalidad": "Argentina",
+    "dni": "28.456.789",
+    "telefonoMovil": "+54 221 4567890",
+    "telefonoFijo": None,
+    "email": "ana.rodriguez@example.com",
+    "emailAlternativo": "ana.trabajo@example.com",
+    "domicilio": "Av. 7 Nro. 1234",
+    "ciudad": "La Plata",
+    "provincia": "Buenos Aires",
+    "pais": "Argentina",
+    "tituloGrado": "Ingeniería en Sistemas de Información",
+    "tituloPosgrado": None,
+    "comoConocio": "EGRESADOS",
+    "motivacion": (
+        "Quiero profundizar en gestión de sistemas para aplicarlo en mi trabajo como analista."
+    ),
+    "solicitaBeca": True,
+    "tipoBeca": "30",
+}
+
+
+class DatosLegajoRequest(CamelModel):
+    """Los datos del formulario sin la cohorte: el cuerpo de `PUT /seguimiento/{token}` (F6).
+
+    `InscripcionRequest` suma `cohorteId`. Así el alta y la edición validan exactamente igual.
+    """
+
     model_config = ConfigDict(
-        str_strip_whitespace=True,
-        json_schema_extra={
-            "examples": [
-                {
-                    "cohorteId": "c1a2b3c4-d5e6-4f70-8a9b-0c1d2e3f4a5b",
-                    "carreraIds": ["5d2f8a1b-3c4d-4e5f-9a0b-1c2d3e4f5a6b"],
-                    "apellido": "Rodríguez",
-                    "nombre": "Ana Laura",
-                    "nacionalidad": "Argentina",
-                    "dni": "28.456.789",
-                    "telefonoMovil": "+54 221 4567890",
-                    "telefonoFijo": None,
-                    "email": "ana.rodriguez@example.com",
-                    "emailAlternativo": "ana.trabajo@example.com",
-                    "domicilio": "Av. 7 Nro. 1234",
-                    "ciudad": "La Plata",
-                    "provincia": "Buenos Aires",
-                    "pais": "Argentina",
-                    "tituloGrado": "Ingeniería en Sistemas de Información",
-                    "tituloPosgrado": None,
-                    "comoConocio": "EGRESADOS",
-                    "motivacion": (
-                        "Quiero profundizar en gestión de sistemas para aplicarlo en mi trabajo "
-                        "como analista."
-                    ),
-                    "solicitaBeca": True,
-                    "tipoBeca": "30",
-                }
-            ]
-        },
+        str_strip_whitespace=True, json_schema_extra={"examples": [_EJEMPLO_DATOS]}
     )
 
-    cohorte_id: UUID
     # 1 o 2 carreras distintas (BR-001). Que estén activas lo controla el caso de uso.
     carrera_ids: list[UUID] = Field(min_length=1, max_length=2)
     apellido: str = Field(min_length=1, max_length=100)
@@ -143,10 +143,25 @@ class InscripcionRequest(CamelModel):
             raise ValueError("Sin beca no corresponde un tipo de beca")
         return valor
 
-    def a_datos(self) -> DatosInscripcion:
+    def a_datos_de_cohorte(self, cohorte_id: UUID) -> DatosInscripcion:
         return DatosInscripcion(
-            **self.model_dump(exclude={"carrera_ids"}), carrera_ids=tuple(self.carrera_ids)
+            **self.model_dump(exclude={"carrera_ids", "cohorte_id"}),
+            cohorte_id=cohorte_id,
+            carrera_ids=tuple(self.carrera_ids),
         )
+
+
+class InscripcionRequest(DatosLegajoRequest):
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [{"cohorteId": "c1a2b3c4-d5e6-4f70-8a9b-0c1d2e3f4a5b", **_EJEMPLO_DATOS}]
+        }
+    )
+
+    cohorte_id: UUID
+
+    def a_datos(self) -> DatosInscripcion:
+        return self.a_datos_de_cohorte(self.cohorte_id)
 
 
 class InscripcionResponse(CamelModel):
