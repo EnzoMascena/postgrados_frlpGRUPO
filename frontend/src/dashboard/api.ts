@@ -10,6 +10,11 @@
                                            tarjetas (L4, Luca)
      PATCH /cohortes/{id}/inscripcion    → abre o cierra el período
                                            de una cohorte (F2, Fran)
+   Y los del detalle de un legajo:
+     GET   /legajos/{id}                 → datos, documentos, historial
+                                           y acciones permitidas (L3)
+     PATCH /legajos/{id}/estado          → aprueba, observa, etc. (L3)
+     GET   /documentos/{id}/download     → el PDF, con el token (F5)
 
    Ni la tabla ni las tarjetas filtran o cuentan en el front: el
    back lo hace en la base y nos manda solo lo que se ve. Así no
@@ -21,8 +26,10 @@
 
 import { apiDescargar, apiFetch } from '../shared/api/client'
 import type {
+  AccionLegajo,
   Cohorte,
   EstadoLegajo,
+  LegajoDetalle,
   LegajoItem,
   Paginado,
   ResumenLegajos,
@@ -85,4 +92,29 @@ export function cambiarPeriodo({
     method: 'PATCH',
     json: { abierta, proximaApertura },
   })
+}
+
+/** GET /legajos/{id}: la vista del coordinador (con historial y acciones). */
+export function obtenerLegajo(id: string): Promise<LegajoDetalle> {
+  return apiFetch<LegajoDetalle>(`/legajos/${encodeURIComponent(id)}`)
+}
+
+export type CambioDeEstado = {
+  accion: AccionLegajo
+  /** Obligatorio para OBSERVAR (5 caracteres o más); opcional en las demás. */
+  comentario: string | null
+}
+
+/** PATCH /legajos/{id}/estado: devuelve el legajo ya cambiado. */
+export function cambiarEstado(id: string, cambio: CambioDeEstado): Promise<LegajoDetalle> {
+  return apiFetch<LegajoDetalle>(`/legajos/${encodeURIComponent(id)}/estado`, {
+    method: 'PATCH',
+    json: cambio,
+  })
+}
+
+/** GET /documentos/{id}/download: el PDF como Blob. Viaja con el token,
+    por eso no se puede abrir con un <a href> común. */
+export function descargarDocumento(documentoId: string) {
+  return apiDescargar(`/documentos/${encodeURIComponent(documentoId)}/download`)
 }

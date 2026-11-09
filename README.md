@@ -77,6 +77,7 @@ Son datos de prueba de la cátedra, no una clave real. El aspirante no tiene usu
 | `docker compose down` | Frena todo y conserva la base |
 | `docker compose down -v` | Frena todo y **borra la base**: el próximo `up --build` la recrea con el seed |
 | `docker compose up -d --build backend` | Reconstruye el back después de cambiar su código o sus dependencias (el back **no** monta el código en el contenedor) |
+| `docker compose exec backend uv run python -m src.legajos.infrastructure.job_vencimiento` | Corre ya el vencimiento de reservas, la tarea que corre sola todos los días a las 3:00 (ADR-007). El seed deja un legajo listo para vencer |
 
 El front monta `./frontend` en el contenedor: cuando cambiás el código, Vite recarga el navegador sin reconstruir. Si cambia `package.json`, usá `docker compose up -d --build -V frontend`.
 
@@ -97,6 +98,7 @@ uv run pytest                             # tests y cobertura (mínimo 70 %)
 uv run ruff check . && uv run ruff format --check .
 uv run alembic upgrade head               # aplica las migraciones
 uv run python -m scripts.seed             # carga los datos de prueba (se puede correr varias veces)
+uv run python -m src.legajos.infrastructure.job_vencimiento   # vence ya las reservas de 30 días o más
 ```
 
 Las migraciones nuevas: `uv run alembic revision --autogenerate -m "descripcion"`. Ojo: Alembic **no detecta los cambios en los `CHECK`**; esos hay que escribirlos a mano en la migración.
@@ -136,6 +138,7 @@ Con `npm run dev` el proxy de Vite manda `/api` a `http://localhost:8000`, es de
 | `port is already allocated` o `address already in use` | Otro programa o un contenedor de otra materia usa el 3000, 8000, 5432, 1025 u 8025. Con `docker ps` ves qué contenedores están corriendo; frenalos con `docker stop <nombre>`. |
 | `failed to connect to the docker API` | Docker Desktop no está abierto. Abrilo y esperá a que diga que el motor está corriendo. |
 | Al correr el back fuera de Docker falla con `ValidationError ... jwt_secret` | Falta el `.env` en la raíz del repo o su `JWT_SECRET` tiene menos de 32 caracteres. Copiá `.env.example` otra vez. (Con Docker no pasa: el compose trae un valor de desarrollo.) |
+| El formulario o "pedir un link nuevo" responden 429 `RATE_LIMITED` | Hubo más de 10 envíos en la última hora desde la misma IP (NFR-S06). En desarrollo todo el front llega con la IP del proxy de Vite, así que el límite es por máquina. Esperá lo que dice el mensaje o reiniciá el back, porque los contadores están en memoria: `docker compose restart backend`. |
 | Querés empezar de cero | `docker compose down -v` y después `docker compose up --build`. |
 
 ---

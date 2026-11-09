@@ -17,6 +17,7 @@
 
 import { ApiError, apiFetch } from '../shared/api/client'
 import type { LegajoDetalle, TipoDocumento } from '../shared/api/tipos'
+import type { DatosLegajoPayload } from '../inscripcion/types'
 
 /** La ruta base de todos los pedidos de este aspirante. */
 export function rutaSeguimiento(token: string): string {
@@ -54,6 +55,34 @@ export function subirDocumento(
     method: 'POST',
     body: formulario,
   })
+}
+
+/**
+ * POST /seguimiento/{token}/enviar, sin cuerpo (plan §10). El back decide
+ * la acción según el estado: en BORRADOR hace ENVIAR y en OBSERVADO,
+ * CORREGIR. Responde el detalle con el estado PENDIENTE. Si falta un
+ * documento obligatorio: 422 DOCUMENTOS_FALTANTES y el estado no cambia.
+ */
+export function enviarARevision(token: string): Promise<LegajoDetalle> {
+  return apiFetch<LegajoDetalle>(`${rutaSeguimiento(token)}/enviar`, { method: 'POST' })
+}
+
+/**
+ * PUT /seguimiento/{token} (plan §10): el mismo cuerpo de POST /legajos sin
+ * `cohorteId`, con las mismas reglas (DNI y email únicos sin contar al
+ * propio legajo). Solo en BORRADOR u OBSERVADO; si no, 409 LEGAJO_NO_EDITABLE.
+ * Responde el detalle actualizado.
+ */
+export function actualizarDatos(
+  token: string,
+  cuerpo: DatosLegajoPayload,
+): Promise<LegajoDetalle> {
+  return apiFetch<LegajoDetalle>(rutaSeguimiento(token), { method: 'PUT', json: cuerpo })
+}
+
+/** true si el back frenó el envío porque falta algún documento obligatorio. */
+export function esDocumentosFaltantes(error: Error | null): boolean {
+  return error instanceof ApiError && error.codigo === 'DOCUMENTOS_FALTANTES'
 }
 
 /**
