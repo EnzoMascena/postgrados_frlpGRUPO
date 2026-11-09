@@ -1,6 +1,6 @@
 # Guía de uso · Sistema de Posgrado UTN FRLP
 
-> **Borrador (6/11).** Están los pasos que ya funcionan en `develop`. Los marcados con 🚧 se completan cuando entren F6 (enviar y editar), D5 (detalle del legajo) y L5 (Excel).
+> **Borrador (9/11).** Los pasos del aspirante están completos: enviar, editar y reenviar se sacaron con F6 (#59) y G4 (#63), que esperan merge. Los marcados con 🚧 se completan cuando entren D5 (detalle del legajo) y L5 (Excel).
 
 Para levantarlo: `docker compose up --build` y entrar a http://localhost:3000. Los emails de prueba llegan a MailHog: http://localhost:8025.
 
@@ -32,13 +32,15 @@ En cada documento tocás "Seleccionar archivo PDF": solo se aceptan PDF de hasta
 
 ![Subida de documentos, con un error y dos cargados](guia/aspirante-04-subir-pdfs.jpg)
 
-### 5. Enviar a revisión 🚧
+### 5. Enviar a revisión
 
 Cuando tenés todos los documentos obligatorios, "Enviar a revisión" se habilita y te pide confirmar antes de mandar.
 
 ![Confirmación de envío](guia/aspirante-05-enviar.jpg)
 
-> 🚧 Falta la captura del mensaje "Recibimos tu preinscripción" (necesita F6).
+Al confirmar, la página pasa a Pendiente, te avisa "Recibimos tu preinscripción" y te llega un email con tu código de seguimiento.
+
+![Preinscripción enviada](guia/aspirante-05b-enviado.jpg)
 
 ### 6. Recuperar el link
 
@@ -46,21 +48,25 @@ Si perdiste el email, en la parte de arriba del formulario escribís tu email y 
 
 ![Recuperar el link](guia/aspirante-06-recuperar-link.png)
 
-### 7. Ver una observación y corregir 🚧
+### 7. Ver una observación y corregir
 
 Si la Secretaría te pide algo, lo ves arriba de todo en amarillo; corregís, tocás "Reenviar corrección" y confirmás.
 
 ![Legajo con observaciones](guia/aspirante-07-observado.png)
 
-> 🚧 Falta la captura de "Editar mis datos" guardando y del reenvío (necesita F6).
+Si lo que hay que corregir es un dato, tocás "Editar mis datos", lo cambiás y guardás; si es un documento, subís el PDF nuevo en su lugar.
+
+![Editar mis datos](guia/aspirante-07b-editar-datos.jpg)
+
+Cuando terminaste, tocás "Reenviar corrección" y confirmás: vuelve a Pendiente y te llega el email "Recibimos tu corrección".
+
+![Reenviar la corrección](guia/aspirante-07c-reenviar.jpg)
 
 ### 8. Ver la aprobación
 
 Cuando te aprueban, ves tu número de legajo y la fecha límite para matricularte.
 
-![Legajo aprobado](guia/aspirante-08-aprobado.png)
-
-> 🚧 Reemplazar por un legajo aprobado dentro del plazo (el del seed ya venció) cuando se pueda recorrer el flujo completo.
+![Legajo aprobado](guia/aspirante-08-aprobado.jpg)
 
 ## Coordinador
 
