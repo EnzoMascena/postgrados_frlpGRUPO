@@ -1,6 +1,6 @@
 # Guía de uso · Sistema de Posgrado UTN FRLP
 
-> **Borrador (9/11).** Los pasos del aspirante están completos: enviar, editar y reenviar se sacaron con F6 (#59) y G4 (#63), que esperan merge. Los marcados con 🚧 se completan cuando entren D5 (detalle del legajo) y L5 (Excel).
+> **Borrador (9/11).** Los pasos del aspirante están completos: enviar, editar y reenviar se sacaron con F6 (#59) y G4 (#63). Exportar (🚧) se completa cuando entre L5 (Excel).
 
 Para levantarlo: `docker compose up --build` y entrar a http://localhost:3000. Los emails de prueba llegan a MailHog: http://localhost:8025.
 
@@ -94,8 +94,46 @@ Con el interruptor "Período de inscripción" de arriba a la derecha abrís o ce
 
 ![Cerrar la inscripción](guia/coordinador-04-periodo.jpg)
 
+### 5. Abrir un legajo
+
+En el dashboard tocás "Ver legajo" y ves los datos, las carreras y la beca, los documentos, el historial y las acciones que se pueden hacer en ese estado.
+
+![Detalle del legajo](guia/coordinador-05-detalle.jpg)
+
+### 6. Ver un PDF
+
+En "Documentación" tocás "Ver" al lado del documento y el PDF se abre en una ventana, sin salir del legajo.
+
+![Vista previa de un PDF](guia/coordinador-06-ver-pdf.jpg)
+
+### 7. Pasar a revisión
+
+En un legajo Pendiente tocás "Pasar a revisión": queda En revisión y el cambio se anota en el historial.
+
+![Legajo pasado a revisión](guia/coordinador-07-revisar.jpg)
+
+### 8. Observar
+
+Si falta algo, tocás "Observar" y escribís qué tiene que corregir: al aspirante le llega por email y el legajo queda Observado ("Rechazar" funciona igual, con un comentario opcional).
+
+![Observar el legajo](guia/coordinador-08-observar.jpg)
+
+### 9. Aprobar
+
+Tocás "Aprobar" y confirmás: se asigna el número de legajo y el aspirante recibe un email con 30 días para matricularse.
+
+![Confirmar la aprobación](guia/coordinador-09-aprobar.jpg)
+
+Al confirmar, el número de legajo aparece arriba y en el aviso, y el legajo queda Completado.
+
+![Legajo aprobado](guia/coordinador-09b-aprobado.jpg)
+
+### 10. Matricular
+
+Cuando el aspirante se matricula, en el legajo Completado tocás "Matricular" y confirmás: pasa a Activo.
+
+![Confirmar la matrícula](guia/coordinador-10-matricular.jpg)
+
 ### Pendientes 🚧
 
-- Abrir un legajo y ver un PDF (D5).
-- Revisar, observar, aprobar y matricular (D5).
 - Exportar a Excel (L5).
