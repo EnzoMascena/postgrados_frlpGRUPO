@@ -4,23 +4,26 @@
 todo queda dentro de la transacción del test y se deshace al terminar (ver conftest).
 """
 
+from dataclasses import replace
 from datetime import UTC, datetime
 
 import pytest
 from sqlalchemy import func
 from sqlmodel import select
 
+from scripts import seed
 from scripts.seed import cargar_datos
 from src.autenticacion.infrastructure.hashing import verificar_password
 from src.autenticacion.infrastructure.orm_models import UsuarioORM
 from src.cohortes.infrastructure.orm_models import CarreraORM, CohorteORM
-from src.legajos.domain.estados import EstadoLegajo
+from src.legajos.domain.estados import EstadoLegajo, TransicionInvalida
 from src.legajos.infrastructure.orm_models import (
     AuditoriaLegajoORM,
     LegajoCarreraORM,
     LegajoORM,
 )
 from src.shared.config import settings
+from src.shared.errors import ErrorDeValidacion
 from src.shared.roles import Rol
 
 EMAIL_COORDINADOR = "coordinador.seed@example.com"
@@ -128,3 +131,25 @@ def test_los_matriculados_tienen_numero_y_las_tres_fechas(session):
     for legajo in activos:
         assert legajo.fecha_inscripcion < legajo.fecha_aprobacion < legajo.fecha_activacion
     assert _legajo(session, "López").numero_legajo is None  # PENDIENTE: sin número todavía
+
+
+@pytest.mark.parametrize(
+    ("estado", "camino", "error"),
+    [
+        # Aprobar sin revisar: la máquina de estados no lo permite (PENDIENTE → COMPLETADO).
+        (EstadoLegajo.COMPLETADO, [seed.ENVIAR, seed.APROBAR], TransicionInvalida),
+        # Observar sin comentario: la máquina pide 5 caracteres o más.
+        (
+            EstadoLegajo.OBSERVADO,
+            [seed.ENVIAR, seed.REVISAR, replace(seed.OBSERVAR, comentario=None)],
+            ErrorDeValidacion,
+        ),
+    ],
+)
+def test_un_camino_que_la_maquina_de_estados_no_permite_frena_el_seed(
+    session, monkeypatch, estado, camino, error
+):
+    monkeypatch.setitem(seed.CAMINOS, estado, camino)
+
+    with pytest.raises(error):
+        cargar_datos(session)

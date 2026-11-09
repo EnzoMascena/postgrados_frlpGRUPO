@@ -22,6 +22,19 @@ class PgUsuarioRepository:
         fila = self.session.get(UsuarioORM, usuario_id)
         return _a_dominio(fila) if fila else None
 
+    def activos_con_rol(self, rol: Rol) -> list[Usuario]:
+        """Los usuarios activos con ese rol, por email. Lo usa el email de VENCER (L3).
+
+        No está en `UsuarioRepository` porque el login no lo necesita: lo usa directo la
+        infraestructura de legajos, que ya sabe que hay una base.
+        """
+        filas = self.session.exec(
+            select(UsuarioORM)
+            .where(UsuarioORM.rol == rol.value, UsuarioORM.activo)
+            .order_by(UsuarioORM.email)
+        ).all()
+        return [_a_dominio(fila) for fila in filas]
+
 
 def _a_dominio(fila: UsuarioORM) -> Usuario:
     return Usuario(

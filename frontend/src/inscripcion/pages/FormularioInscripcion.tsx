@@ -1,224 +1,214 @@
 /* ═══════════════════════════════════════════════════════════════
-   FormularioInscripcion.tsx — PANTALLA DEL ASPIRANTE
+   FormularioInscripcion.tsx — PANTALLA DEL ASPIRANTE (/inscripcion)
    ───────────────────────────────────────────────────────────────
    PARA EXPONER:
    Es la preinscripción a una carrera de posgrado. Reemplaza al
-   formulario en papel/PDF que hoy se completa a mano: el
-   aspirante carga sus datos y sube la documentación en PDF.
+   formulario en papel/PDF que hoy se completa a mano.
 
-   CÓMO ESTÁ ORGANIZADA (recorrer de arriba hacia abajo al mostrar):
-     1. Carrera          → a qué carrera se inscribe
-     2. Datos personales → apellido, nombre, DNI, contacto
-     3. Domicilio
-     4. Formación y motivación → títulos + por qué quiere cursar
-     5. Documentación (PDF)    → los 6 archivos que pide el reglamento
-     6. Beca             → sección OPCIONAL, se despliega sola
-     7. Acciones         → guardar borrador / enviar
+   EL RECORRIDO TIENE DOS PANTALLAS:
+     1. Acá (/inscripcion): datos personales, carreras y beca. Al
+        guardar se crea el legajo en Borrador.
+     2. /seguimiento/:token: estado, documentación (PDF) y enviar a
+        revisión. La documentación se pasó para allá porque para
+        subir un PDF el legajo tiene que existir.
 
-   LA IDEA TÉCNICA A DESTACAR:
-   No repetimos el mismo HTML 20 veces. Armamos componentes
-   reutilizables y los usamos como si fueran etiquetas propias:
-     <Card>      → cada bloque/sección con título e ícono
-     <Field>     → etiqueta + asterisco de obligatorio + el input
-     <UploadBox> → la caja punteada para subir un PDF
-     <Button>, <Badge>, <Topbar>
-   Todos viven en src/shared/ y se usan también en las otras
-   pantallas. Eso es reutilización de código: si cambiamos el
-   estilo de Card, cambia en toda la aplicación de una sola vez.
+   EL PERÍODO (US-CORE-009): la pantalla pide las cohortes a la API
+   con useCohortes() (TanStack Query) y decide qué mostrar:
+     · cargando              → <Cargando>
+     · falló el pedido       → <Alerta> con el error
+     · ninguna abierta       → "La inscripción está cerrada…"
+     · una abierta           → el formulario, para esa cohorte
+     · varias abiertas       → un select para elegir la cohorte
+   El Badge del Topbar ya no es fijo: sale de los mismos datos.
 
-   LO ÚNICO INTERACTIVO POR AHORA: el checkbox de beca (ver abajo).
-   Los campos todavía no se envían a ningún lado porque el backend
-   se conecta en la próxima entrega.
+   Los campos viven en <FormularioDatos>, un componente aparte
+   porque se reusa para editar los datos desde el seguimiento.
+
+   GUARDAR (US-CORE-001): "Guardar y continuar…" → POST /legajos con
+   useInscribir() → si sale bien, el back devuelve el token y vamos a
+   /seguimiento/{token}. Si falla, el error del back se muestra:
+     · con `field` → al lado de ese campo (erroresServidor)
+     · sin `field` → en una Alerta arriba (también el 429 y "sin
+       conexión")
+     · 409 de email repetido → además, "Mandarme el link"
+     · 409 PERIODO_CERRADO → se vuelven a pedir las cohortes, y la
+       pantalla pasa sola a "Inscripción cerrada"
+
+   RECUPERAR: la card "¿Ya empezaste tu preinscripción?" está siempre,
+   aunque el período esté cerrado. Con ?recuperar=1 (viene del email
+   de observación) la página baja hasta ella y enfoca el email.
    ═══════════════════════════════════════════════════════════════ */
 
-import { useState } from 'react'
-import {
-  IconClipboardList,
-  IconSchool,
-  IconUser,
-  IconMapPin,
-  IconCertificate,
-  IconFileText,
-  IconAward,
-  IconSend,
-  IconDeviceFloppy,
-} from '@tabler/icons-react'
+import { useMemo, useRef, useState } from 'react'
+import { useNavigate, useSearchParams } from 'react-router'
+import { useQueryClient } from '@tanstack/react-query'
+import { IconCalendarEvent, IconCalendarOff, IconClipboardList, IconMailForward } from '@tabler/icons-react'
 import Topbar from '../../shared/layout/Topbar'
-import Card from '../../shared/components/Card'
 import Badge from '../../shared/components/Badge'
+import Alerta from '../../shared/components/Alerta'
 import Button from '../../shared/components/Button'
+import Card from '../../shared/components/Card'
+import Cargando from '../../shared/components/Cargando'
 import Field from '../../shared/components/Field'
-import UploadBox from '../../shared/components/UploadBox'
 import { controlClass } from '../../shared/components/controls'
+import { useCarreras, useCohortes } from '../../shared/hooks/useCatalogos'
+import FormularioDatos from '../components/FormularioDatos'
+import RecuperarAcceso from '../components/RecuperarAcceso'
+import { aPayload, esEmailRepetido, esPeriodoCerrado, separarError } from '../api'
+import { useInscribir, useRecuperarAcceso } from '../hooks/useInscripcion'
+import { cohortesAbiertas, mensajeCerrada, proximaApertura } from '../periodo'
+import type { DatosInscripcion } from '../types'
 
 export default function FormularioInscripcion() {
-  // Único estado de la pantalla: si el aspirante tildó "Solicito beca".
-  // Cuando pasa a true, aparecen los campos extra de beca.
-  // Esto se llama "renderizado condicional".
-  const [solicitaBeca, setSolicitaBeca] = useState(false)
+  const navigate = useNavigate()
+  const queryClient = useQueryClient()
+  const [parametros] = useSearchParams()
+
+  const cohortes = useCohortes()
+  // También se piden acá para no mostrar el formulario a medias.
+  // TanStack Query las comparte con FormularioDatos: se piden una vez.
+  const carreras = useCarreras()
+
+  const inscripcion = useInscribir()
+  // El "Mandarme el link" del 409 de email repetido.
+  const linkPorEmailRepetido = useRecuperarAcceso()
+
+  // La cohorte elegida en el select ('' = todavía no tocó el select).
+  const [cohorteElegida, setCohorteElegida] = useState('')
+  const alertaArriba = useRef<HTMLDivElement>(null)
+
+  const abiertas = cohortes.data ? cohortesAbiertas(cohortes.data) : []
+  // Si no eligió nada (o la que eligió se cerró), va la más nueva abierta.
+  const cohorte = abiertas.find((c) => c.id === cohorteElegida) ?? abiertas[0]
+
+  // useMemo: FormularioDatos necesita el mismo objeto mientras el error
+  // no cambie (si no, volvería a poner el foco en cada render).
+  const error = useMemo(() => separarError(inscripcion.error), [inscripcion.error])
+  const emailRepetido = esEmailRepetido(inscripcion.error)
+
+  function guardar(datos: DatosInscripcion) {
+    if (!cohorte) return
+    linkPorEmailRepetido.reset()
+    inscripcion.mutate(aPayload(datos, cohorte.id), {
+      onSuccess: ({ token }) => navigate(`/seguimiento/${encodeURIComponent(token)}`),
+      onError: (e) => {
+        // Se cerró mientras completaba: con las cohortes nuevas la
+        // pantalla muestra "Inscripción cerrada" con la próxima fecha.
+        if (esPeriodoCerrado(e)) void queryClient.invalidateQueries({ queryKey: ['cohortes'] })
+        // Un error sin campo (o el de email repetido) se lee arriba.
+        if (!separarError(e).general && !esEmailRepetido(e)) return
+        // Espera al render que muestra la Alerta.
+        requestAnimationFrame(() =>
+          alertaArriba.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }),
+        )
+      },
+    })
+  }
+
+  function contenido() {
+    if (cohortes.isPending || carreras.isPending) return <Cargando />
+
+    if (cohortes.isError || carreras.isError) {
+      return (
+        <Alerta variant="danger">
+          No pudimos cargar el formulario de inscripción. Revisá tu conexión y recargá la página.
+        </Alerta>
+      )
+    }
+
+    if (!cohorte) {
+      return (
+        <Card title="Inscripción cerrada" icon={IconCalendarOff}>
+          <p className="text-[13px] text-ink">
+            {mensajeCerrada(proximaApertura(cohortes.data))}
+          </p>
+        </Card>
+      )
+    }
+
+    return (
+      <>
+        <div ref={alertaArriba}>
+          {error.general && (
+            <Alerta variant="danger" className="mb-4">
+              {error.general}
+            </Alerta>
+          )}
+
+          {/* El mensaje del 409 ya está al lado del email: acá va la salida. */}
+          {emailRepetido && inscripcion.variables && (
+            <Alerta variant="warn" className="mb-4">
+              <p>
+                Ya hay una preinscripción con <strong>{inscripcion.variables.email}</strong>. Si
+                la empezaste vos, pedí el link para continuar donde la dejaste.
+              </p>
+              {linkPorEmailRepetido.isSuccess ? (
+                <p className="mt-2">{linkPorEmailRepetido.data.mensaje}</p>
+              ) : (
+                <Button
+                  className="mt-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                  disabled={linkPorEmailRepetido.isPending}
+                  aria-busy={linkPorEmailRepetido.isPending}
+                  onClick={() => linkPorEmailRepetido.mutate(inscripcion.variables!.email)}
+                >
+                  <IconMailForward size={15} stroke={1.5} />
+                  {linkPorEmailRepetido.isPending ? 'Enviando…' : 'Mandarme el link'}
+                </Button>
+              )}
+              {linkPorEmailRepetido.isError && (
+                <p className="mt-2 text-danger">{linkPorEmailRepetido.error.message}</p>
+              )}
+            </Alerta>
+          )}
+        </div>
+
+        {/* Con más de una cohorte abierta, el aspirante elige. */}
+        {abiertas.length > 1 && (
+          <Card title="Cohorte" icon={IconCalendarEvent}>
+            <Field label="Cohorte a la que te inscribís" required htmlFor="cohorte" className="max-w-md">
+              <select
+                id="cohorte"
+                className={controlClass}
+                value={cohorte.id}
+                disabled={inscripcion.isPending}
+                onChange={(e) => setCohorteElegida(e.target.value)}
+              >
+                {abiertas.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.nombre}
+                  </option>
+                ))}
+              </select>
+            </Field>
+          </Card>
+        )}
+
+        <FormularioDatos
+          textoBoton="Guardar y continuar con la documentación"
+          onEnviar={guardar}
+          // Después de un 201 se sigue en "Guardando…" hasta que cambia la página.
+          enviando={inscripcion.isPending || inscripcion.isSuccess}
+          erroresServidor={error.porCampo}
+        />
+      </>
+    )
+  }
 
   return (
     <>
-      {/* Barra superior: título de la pantalla + el estado del
-          período de inscripción (lo controla Conducción desde el
-          Dashboard). */}
       <Topbar title="Formulario de preinscripción" icon={IconClipboardList}>
-        <Badge variant="info">Período abierto</Badge>
+        {cohortes.data &&
+          (cohorte ? (
+            <Badge variant="info">Período abierto</Badge>
+          ) : (
+            <Badge variant="warn">Período cerrado</Badge>
+          ))}
       </Topbar>
 
       <div className="p-5">
-        {/* Carrera */}
-        <Card title="Carrera" icon={IconSchool}>
-          <Field label="Carrera/s a inscribirse" required className="max-w-md">
-            <select className={controlClass} defaultValue="">
-              <option value="" disabled>
-                — Seleccionar carrera —
-              </option>
-              <option>Especialización en Ingeniería en Sistemas</option>
-              <option>Maestría en Ingeniería en Sistemas</option>
-              <option>Doctorado en Ingeniería</option>
-            </select>
-          </Field>
-        </Card>
-
-        {/* Datos personales.
-            "grid-cols-1 sm:grid-cols-2" es Tailwind: en celular los
-            campos van uno abajo del otro y en pantalla grande en dos
-            columnas. Eso es DISEÑO RESPONSIVO. */}
-        <Card title="Datos personales" icon={IconUser}>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Field label="Apellido" required>
-              <input className={controlClass} />
-            </Field>
-            <Field label="Nombre" required>
-              <input className={controlClass} />
-            </Field>
-            <Field label="Nacionalidad" required>
-              <input className={controlClass} />
-            </Field>
-            <Field label="DNI o Pasaporte" required>
-              <input className={controlClass} placeholder="Ej: 30456789" />
-            </Field>
-            <Field label="Teléfono móvil" required>
-              <input className={controlClass} />
-            </Field>
-            <Field label="Teléfono fijo">
-              <input className={controlClass} />
-            </Field>
-            <Field label="Correo electrónico" required>
-              <input type="email" className={controlClass} />
-            </Field>
-            <Field label="Correo alternativo">
-              <input type="email" className={controlClass} />
-            </Field>
-          </div>
-        </Card>
-
-        {/* Domicilio */}
-        <Card title="Domicilio" icon={IconMapPin}>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Field label="Domicilio" required className="sm:col-span-2">
-              <input className={controlClass} />
-            </Field>
-            <Field label="Ciudad" required>
-              <input className={controlClass} />
-            </Field>
-            <Field label="Provincia" required>
-              <input className={controlClass} />
-            </Field>
-            <Field label="País" required>
-              <input className={controlClass} />
-            </Field>
-          </div>
-        </Card>
-
-        {/* Formación y motivación */}
-        <Card title="Formación y motivación" icon={IconCertificate}>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Field label="Título de grado" required>
-              <input className={controlClass} />
-            </Field>
-            <Field label="Título de posgrado">
-              <input className={controlClass} />
-            </Field>
-            <Field label="¿Cómo conoció la oferta?" required className="sm:col-span-2">
-              <select className={controlClass} defaultValue="">
-                <option value="" disabled>
-                  — Seleccionar —
-                </option>
-                <option>Sitio web UTN FRLP</option>
-                <option>Otros sitios web</option>
-                <option>Egresados de la UTN FRLP</option>
-                <option>Comentarios de colegas</option>
-                <option>Otros</option>
-              </select>
-            </Field>
-            <Field
-              label="Motivaciones para realizar la/s carrera/s"
-              required
-              className="sm:col-span-2"
-            >
-              <textarea className={controlClass} rows={4} placeholder="Mínimo 50 caracteres" />
-            </Field>
-          </div>
-        </Card>
-
-        {/* Documentación: los PDF que exige el reglamento.
-            El último está marcado como `optional`, por eso aparece
-            aclarado "(opcional)" en pantalla. */}
-        <Card title="Documentación (PDF)" icon={IconFileText}>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            <UploadBox label="Formulario de preinscripción firmado" />
-            <UploadBox label="Copia del DNI" />
-            <UploadBox label="Partida de nacimiento" />
-            <UploadBox label="Constancia de CUIT / CUIL" />
-            <UploadBox label="Copia del título de grado" />
-            <UploadBox label="Copia del título de posgrado" optional />
-          </div>
-        </Card>
-
-        {/* Beca — la parte interactiva de esta pantalla. */}
-        <Card title="Beca" icon={IconAward}>
-          <label className="flex items-center gap-2 text-[13px] text-ink cursor-pointer">
-            <input
-              type="checkbox"
-              checked={solicitaBeca}
-              onChange={(e) => setSolicitaBeca(e.target.checked)}
-            />
-            Solicito beca
-          </label>
-
-          {/* Traducción del código: "si solicitaBeca es verdadero,
-              mostrá este bloque". Si está en false, directamente no
-              existe en la pantalla. */}
-          {solicitaBeca && (
-            <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Field label="Porcentaje de beca" required>
-                <div className="flex gap-4 text-[13px] text-ink pt-1">
-                  <label className="flex items-center gap-1.5">
-                    <input type="radio" name="beca" /> 30%
-                  </label>
-                  <label className="flex items-center gap-1.5">
-                    <input type="radio" name="beca" /> 100%
-                  </label>
-                </div>
-              </Field>
-              <UploadBox label="Formulario de beca firmado" />
-            </div>
-          )}
-        </Card>
-
-        {/* Acciones finales. "Guardar borrador" permite completar
-            el trámite en varias sesiones; "Enviar inscripción" cierra
-            la presentación. */}
-        <div className="flex justify-end gap-2 pb-2">
-          <Button>
-            <IconDeviceFloppy size={15} stroke={1.5} /> Guardar borrador
-          </Button>
-          <Button variant="primary">
-            <IconSend size={15} stroke={1.5} /> Enviar inscripción
-          </Button>
-        </div>
+        {/* Arriba de todo y fuera de contenido(): anda aunque el período esté cerrado. */}
+        <RecuperarAcceso enfocar={parametros.get('recuperar') === '1'} />
+        {contenido()}
       </div>
     </>
   )
