@@ -138,7 +138,7 @@ def test_q_con_digitos_busca_dni_exacto(client, session, headers_coordinador, co
     assert _ids(respuesta) == [str(buscado.id)]
 
 
-@pytest.mark.parametrize("q", ["rodr", "RODR", "Rodríguez", "ríguez"])
+@pytest.mark.parametrize("q", ["rodr", "RODR", "Rodríguez", "ríguez", "rodriguez", "RODRIGUEZ"])
 def test_q_con_letras_busca_apellido_parcial(
     client, session, headers_coordinador, cohorte, carrera, q
 ):

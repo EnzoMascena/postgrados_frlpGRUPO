@@ -60,6 +60,7 @@ Este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 - En `POST /legajos`, el email alternativo es obligatorio, como piden el SRS y el contrato del plan (antes se aceptaba vacío o nulo), y la motivación puede tener hasta 2000 caracteres (antes no tenía tope y el endpoint es público)
 - En el formulario de inscripción, la motivación se frena en 2000 caracteres: el textarea no deja escribir más, el contador muestra "N / 2000" y la validación usa el mismo mensaje que el 422 del back
 - Los logs del back ya no guardan el token del link de seguimiento: el log de accesos y el de errores muestran `/seguimiento/***` (ADR-005)
+- La búsqueda por apellido del dashboard y el Excel no distinguen tildes: "garcia" encuentra "García" y "munoz" encuentra "Muñoz"
 
 ---
 

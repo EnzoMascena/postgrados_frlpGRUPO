@@ -94,8 +94,8 @@ ERRORES_DE_ACCESO: dict[int | str, dict[str, Any]] = {
     description=(
         "Coordinador. El listado del dashboard, de a una página y con los más nuevos primero. "
         "`q` con solo dígitos busca el DNI exacto; si no, una parte del apellido sin distinguir "
-        "mayúsculas, con 3 letras como mínimo. `estado`, `cohorte`, `carrera` y `beca` se "
-        "combinan con `q`. `total` es la cantidad sin paginar. `documentosCargados` cuenta solo "
+        "mayúsculas ni tildes, con 3 letras como mínimo. `estado`, `cohorte`, `carrera` y `beca` "
+        "se combinan con `q`. `total` es la cantidad sin paginar. `documentosCargados` cuenta solo "
         "los documentos que le corresponden al aspirante."
     ),
     responses={
