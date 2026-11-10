@@ -15,6 +15,7 @@ from pydantic.alias_generators import to_camel
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from src.shared.errors import ErrorDeNegocio
+from src.shared.logs import tapar_token
 from src.shared.security_headers import agregar_headers_de_seguridad
 
 logger = logging.getLogger(__name__)
@@ -103,8 +104,10 @@ def registrar_manejadores_de_errores(app: FastAPI) -> None:
 
     @app.exception_handler(Exception)
     async def manejar_error_inesperado(request: Request, exc: Exception) -> JSONResponse:
-        # Al cliente no le llega ningún detalle interno: queda solo en el log.
-        logger.exception("Error no controlado en %s %s", request.method, request.url.path)
+        # Al cliente no le llega ningún detalle interno: queda solo en el log, sin el token del
+        # link de seguimiento si la ruta lo trae.
+        ruta = tapar_token(request.url.path)
+        logger.exception("Error no controlado en %s %s", request.method, ruta)
         mensaje = "Ocurrió un error inesperado. Probá de nuevo más tarde"
         respuesta = JSONResponse(
             status_code=500, content=cuerpo_de_error(500, "INTERNAL_ERROR", mensaje)
