@@ -165,6 +165,30 @@ def test_filtro_por_apellido_parcial_sin_distinguir_mayusculas(
     assert _ids(repo.buscar(CriteriosBusqueda(apellido=texto), 0, 20)) == [buscado.id]
 
 
+@pytest.mark.parametrize(
+    ("apellido", "texto"),
+    [
+        ("García", "garcia"),
+        ("García", "GARCIA"),
+        ("García", "GARCÍA"),
+        ("García", "arci"),
+        ("Garcia", "garcía"),
+        ("Muñoz", "munoz"),
+        ("Muñoz", "MUÑOZ"),
+        ("Güemes", "guemes"),
+    ],
+)
+def test_filtro_por_apellido_sin_distinguir_tildes(
+    repo, session, cohorte, carrera, apellido, texto
+):
+    buscado = _legajo(session, cohorte, [carrera], apellido=apellido)
+    _legajo(session, cohorte, [carrera], apellido="Romero")
+    criterios = CriteriosBusqueda(apellido=texto)
+
+    assert _ids(repo.buscar(criterios, 0, 20)) == [buscado.id]
+    assert repo.contar(criterios) == 1
+
+
 @pytest.mark.parametrize("texto", ["%%%", "___", "%_%", "\\\\\\"])
 def test_los_comodines_del_usuario_se_buscan_literales(repo, session, cohorte, carrera, texto):
     _legajo(session, cohorte, [carrera], apellido="Rodríguez")

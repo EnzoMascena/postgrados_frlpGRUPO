@@ -130,6 +130,18 @@ def test_tiene_las_mismas_filas_que_la_busqueda_con_los_mismos_filtros(
     assert [celda.value for celda in hoja["C"][1:]] == [fila["dni"] for fila in busqueda["items"]]
 
 
+def test_buscar_sin_tildes_tambien_filtra_el_excel(
+    client, session, headers_coordinador, cohorte, carrera
+):
+    buscado = _legajo(session, cohorte, [carrera], apellido="García")
+    _legajo(session, cohorte, [carrera], minutos=1, apellido="Romero")
+    filtros = {"q": "garcia", "cohorte": str(cohorte.id)}
+
+    hoja = _hoja(client.get(EXPORTAR, params=filtros, headers=headers_coordinador))
+
+    assert [celda.value for celda in hoja["C"][1:]] == [buscado.dni]
+
+
 def test_no_pagina_aunque_haya_mas_de_una_pagina(
     client, session, headers_coordinador, cohorte, carrera
 ):
