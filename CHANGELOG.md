@@ -45,6 +45,7 @@ Este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 - Vencimiento de reservas: todos los días a las 3:00 (hora de Argentina) los legajos COMPLETADO con 30 días o más desde la aprobación pasan a VENCIDO, con auditoría del sistema y email a cada coordinador activo; se corre a mano con `uv run python -m src.legajos.infrastructure.job_vencimiento` (ADR-007)
 - Edición y envío del legajo desde el link del aspirante: `PUT /seguimiento/{token}` cambia los datos en BORRADOR u OBSERVADO con las mismas reglas que el formulario (DNI y email únicos sin contar al propio legajo, período abierto), y `POST /seguimiento/{token}/enviar` hace ENVIAR o CORREGIR con `ServicioEstados` solo si están todos los documentos obligatorios (si no, 422 `DOCUMENTOS_FALTANTES`)
 - Enviar y corregir desde la página de seguimiento: "Enviar a revisión" en Borrador y "Reenviar corrección" en Observado, deshabilitado con la lista de los documentos que faltan, confirmación en un modal y aviso de éxito; si el back responde `DOCUMENTOS_FALTANTES`, marca en rojo los que faltan. "Editar mis datos" abre el formulario de la inscripción con los datos actuales y guarda con `PUT /seguimiento/{token}`, con los errores del back al lado de cada campo
+- Prueba del flujo completo por la API (`tests/test_flujo_completo.py`): de la inscripción a la matrícula con una observación y su corrección, el período cerrado y el vencimiento de la reserva a los 30 días
 
 ### Changed
 - `docker-compose.yml` y `.env.example` reemplazan las plantillas viejas de Node
