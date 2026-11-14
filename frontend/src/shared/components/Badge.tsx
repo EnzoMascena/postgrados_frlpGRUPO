@@ -15,7 +15,8 @@ import type { ReactNode } from 'react'
 type Variant = 'info' | 'success' | 'warn' | 'danger'
 
 const styles: Record<Variant, string> = {
-  info: 'bg-primary-light text-primary',
+  // En oscuro el fondo azul se oscurece: el texto pasa a claro para que se lea.
+  info: 'bg-primary-light text-primary dark:text-on-dark',
   success: 'bg-ok-bg text-ok',
   warn: 'bg-warn-bg text-warn',
   danger: 'bg-danger-bg text-danger',

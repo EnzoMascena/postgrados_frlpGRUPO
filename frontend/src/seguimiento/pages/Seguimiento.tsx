@@ -24,6 +24,7 @@
    back y TanStack Query lo guarda en la caché ['seguimiento', token].
    ═══════════════════════════════════════════════════════════════ */
 
+import { useState } from 'react'
 import { Link, useParams } from 'react-router'
 import { IconLinkOff, IconListSearch, IconMailForward } from '@tabler/icons-react'
 import Topbar from '../../shared/layout/Topbar'
@@ -33,9 +34,21 @@ import Cargando from '../../shared/components/Cargando'
 import EstadoBadge from '../../shared/components/EstadoBadge'
 import AvisoEstado from '../components/AvisoEstado'
 import Documentacion from '../components/Documentacion'
-import ResumenDatos from '../components/ResumenDatos'
-import { esLinkInvalido } from '../api'
-import { useSeguimiento } from '../hooks/useSeguimiento'
+import EnviarRevision from '../components/EnviarRevision'
+import DatosDelLegajo from '../components/DatosDelLegajo'
+import { esDocumentosFaltantes, esLinkInvalido } from '../api'
+import { sePuedeEnviar } from '../envio'
+import { aCuerpo } from '../../inscripcion/api'
+import type { DatosInscripcion } from '../../inscripcion/types'
+import { useActualizarDatos, useEnviar, useSeguimiento } from '../hooks/useSeguimiento'
+
+// Los textos de la Alerta de éxito. La corrección se reconoce aparte, como en el
+// email confirmacion_envio (es_correccion).
+const EXITO = {
+  envio: 'Recibimos tu preinscripción. Te mandamos un email con tu código de seguimiento.',
+  correccion: 'Recibimos tu corrección. Te mandamos un email con tu código de seguimiento.',
+  datos: 'Guardamos tus cambios.',
+} as const
 
 function CodigoSeguimiento({ codigo, className }: { codigo: string; className: string }) {
   return (
@@ -51,6 +64,46 @@ export default function Seguimiento() {
   const { token = '' } = useParams()
   const seguimiento = useSeguimiento(token)
   const legajo = seguimiento.data
+  const envio = useEnviar(token)
+  const edicion = useActualizarDatos(token)
+  const [editando, setEditando] = useState(false)
+  // Se guarda aparte del legajo: después de enviar, el estado ya es PENDIENTE
+  // y no se sabe si lo que se mandó era un envío o una corrección.
+  const [exito, setExito] = useState<keyof typeof EXITO | null>(null)
+
+  // Los botones estaban abajo y la Alerta de éxito queda arriba: la llevamos a la vista.
+  function mostrarExito(cual: keyof typeof EXITO) {
+    setExito(cual)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  function enviar(esCorreccion: boolean) {
+    setExito(null)
+    envio.mutate(undefined, {
+      onSuccess: () => mostrarExito(esCorreccion ? 'correccion' : 'envio'),
+    })
+  }
+
+  function editar() {
+    setExito(null)
+    edicion.reset()
+    setEditando(true)
+  }
+
+  function cancelarEdicion() {
+    edicion.reset()
+    setEditando(false)
+  }
+
+  function guardar(datos: DatosInscripcion) {
+    setExito(null)
+    edicion.mutate(aCuerpo(datos), {
+      onSuccess: () => {
+        setEditando(false)
+        mostrarExito('datos')
+      },
+    })
+  }
 
   function contenido() {
     if (seguimiento.isPending) return <Cargando texto="Cargando tu preinscripción…" />
@@ -84,11 +137,40 @@ export default function Seguimiento() {
       )
     }
 
+    const datos = seguimiento.data
     return (
       <>
-        <AvisoEstado legajo={seguimiento.data} />
-        <Documentacion token={token} legajo={seguimiento.data} />
-        <ResumenDatos legajo={seguimiento.data} />
+        {exito && (
+          <Alerta variant="success" className="mb-3.5">
+            {EXITO[exito]}
+          </Alerta>
+        )}
+        <AvisoEstado legajo={datos} />
+        <Documentacion
+          token={token}
+          legajo={datos}
+          // Solo después de que el back frenó el envío: antes, los pendientes no van en rojo.
+          faltantes={esDocumentosFaltantes(envio.error) ? datos.documentosFaltantes : []}
+        />
+        {/* Mientras edita no se envía: primero guarda o cancela. */}
+        {sePuedeEnviar(datos) && !editando && (
+          <EnviarRevision
+            legajo={datos}
+            onConfirmar={() => enviar(datos.estado === 'OBSERVADO')}
+            enviando={envio.isPending}
+            error={envio.error?.message ?? null}
+          />
+        )}
+        <DatosDelLegajo
+          legajo={datos}
+          // Si el legajo dejó de ser editable (lo envió desde otra pestaña), se cierra solo.
+          editando={editando && datos.puedeEditar === true}
+          onEditar={editar}
+          onCancelar={cancelarEdicion}
+          onGuardar={guardar}
+          guardando={edicion.isPending}
+          error={edicion.error}
+        />
       </>
     )
   }

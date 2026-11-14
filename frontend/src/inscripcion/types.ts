@@ -58,6 +58,12 @@ export type InscripcionPayload = Omit<
   comoConocio: ComoConocio
 }
 
+/**
+ * El cuerpo de PUT /seguimiento/{token} (editar los datos): el mismo de
+ * POST /legajos sin `cohorteId`, porque la cohorte no se cambia (plan §10).
+ */
+export type DatosLegajoPayload = Omit<InscripcionPayload, 'cohorteId'>
+
 /** La respuesta 201 de POST /legajos. Con el token se navega a /seguimiento/{token}. */
 export type RespuestaInscripcion = {
   legajoId: string

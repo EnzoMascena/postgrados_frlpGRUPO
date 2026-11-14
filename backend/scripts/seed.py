@@ -9,6 +9,13 @@ volver a tenerlo COMPLETADO: `docker compose down -v` y `docker compose up --bui
 Los datos salen de scripts/datos_seed.json, una copia recortada de docs/SEED_DATA.json (dentro
 del contenedor no existe docs/). La clave del coordinador sale de la configuración, nunca del
 código.
+
+Los legajos que ya no son BORRADOR tienen sus documentos requeridos: un PDF de una página
+armado acá, guardado con `guardar_pdf` (el mismo almacenamiento que una subida de verdad). Al
+OBSERVADO le falta el título de grado, que es justo lo que le observaron. Cada documento se crea
+solo si el legajo todavía no tiene uno de ese tipo, así una base que ya tenía el seed los recibe
+en la próxima corrida. Si una corrida falla a la mitad, los PDFs que alcanzó a escribir quedan en
+disco sin fila en la base (no los sirve nadie) y la corrida siguiente escribe otros.
 """
 
 import itertools
@@ -24,6 +31,10 @@ from sqlmodel import Session, SQLModel, select
 from src.autenticacion.infrastructure.hashing import hashear_password
 from src.autenticacion.infrastructure.orm_models import UsuarioORM
 from src.cohortes.infrastructure.orm_models import CarreraORM, CohorteORM
+from src.gestion_documental.domain.requisitos import documentos_requeridos
+from src.gestion_documental.domain.tipos import NOMBRE_DOCUMENTO, TipoDocumento
+from src.gestion_documental.infrastructure.almacenamiento import guardar_pdf
+from src.gestion_documental.infrastructure.orm_models import DocumentoORM
 from src.legajos.domain.estados import (
     Accion,
     EstadoLegajo,
@@ -153,6 +164,76 @@ def _historial(estado: EstadoLegajo, comienzo: datetime) -> list[CambioDeEstado]
     return historial
 
 
+def _pdf_de_prueba(titulo: str) -> bytes:
+    """Un PDF válido de una página A4 que dice "Documento de prueba · <titulo>".
+
+    Se arma a mano (cinco objetos y la tabla xref) para no sumar una dependencia solo para el
+    seed. Helvetica con WinAnsiEncoding alcanza para los acentos y el "·".
+    """
+    texto = f"Documento de prueba · {titulo}".encode("cp1252")
+    texto = texto.replace(b"\\", b"\\\\").replace(b"(", b"\\(").replace(b")", b"\\)")
+    contenido = b"BT /F1 16 Tf 56 760 Td (" + texto + b") Tj ET"
+    objetos = [
+        b"<< /Type /Catalog /Pages 2 0 R >>",
+        b"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+        b"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Contents 4 0 R"
+        b" /Resources << /Font << /F1 5 0 R >> >> >>",
+        b"<< /Length %d >>\nstream\n%s\nendstream" % (len(contenido), contenido),
+        b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>",
+    ]
+    pdf = bytearray(b"%PDF-1.4\n")
+    posiciones = []
+    for numero, objeto in enumerate(objetos, start=1):
+        posiciones.append(len(pdf))
+        pdf += b"%d 0 obj\n%s\nendobj\n" % (numero, objeto)
+    inicio_xref = len(pdf)
+    pdf += b"xref\n0 %d\n0000000000 65535 f \n" % (len(objetos) + 1)
+    pdf += b"".join(b"%010d 00000 n \n" % posicion for posicion in posiciones)
+    pdf += b"trailer\n<< /Size %d /Root 1 0 R >>\nstartxref\n%d\n%%%%EOF\n" % (
+        len(objetos) + 1,
+        inicio_xref,
+    )
+    return bytes(pdf)
+
+
+def _documentos_del_seed(estado: EstadoLegajo, solicita_beca: bool) -> list[TipoDocumento]:
+    """Los que subió el aspirante: ninguno en BORRADOR; al OBSERVADO le falta el título de grado."""
+    if estado == EstadoLegajo.BORRADOR:
+        return []
+    # Ningún aspirante del seed declara título de posgrado.
+    tipos = documentos_requeridos(solicita_beca, tiene_titulo_posgrado=False)
+    if estado == EstadoLegajo.OBSERVADO:
+        tipos.remove(TipoDocumento.TITULO_GRADO)
+    return tipos
+
+
+def _cargar_documentos(
+    session: Session, legajo: LegajoORM, tipos: list[TipoDocumento], subida: datetime
+) -> int:
+    """Crea los documentos de `tipos` que el legajo todavía no tiene. Devuelve cuántos creó."""
+    existentes = set(
+        session.exec(select(DocumentoORM.tipo).where(DocumentoORM.legajo_id == legajo.id)).all()
+    )
+    nuevos = 0
+    for tipo in tipos:
+        if tipo.value in existentes:
+            continue
+        guardado = guardar_pdf(_pdf_de_prueba(NOMBRE_DOCUMENTO[tipo]), legajo.cohorte_id, legajo.id)
+        session.add(
+            DocumentoORM(
+                legajo_id=legajo.id,
+                tipo=tipo.value,
+                path_storage=guardado.path_storage,
+                nombre_original=f"{tipo.value.lower()}.pdf",
+                checksum_sha256=guardado.checksum_sha256,
+                tamanio_bytes=guardado.tamanio_bytes,
+                fecha_subida=subida,
+            )
+        )
+        nuevos += 1
+    return nuevos
+
+
 def _crear_legajo(
     session: Session,
     cohorte: CohorteORM,
@@ -161,7 +242,7 @@ def _crear_legajo(
     comienzo: datetime,
     numero_legajo: str | None,
     email_coordinador: str,
-) -> None:
+) -> LegajoORM:
     """Crea el legajo, su carrera y una fila de auditoría por cada paso de su camino.
 
     `comienzo` es la fecha de inscripción; para el BORRADOR, la fecha en que empezó el
@@ -205,6 +286,7 @@ def _crear_legajo(
                 created_at=fecha,
             )
         )
+    return legajo
 
 
 def cargar_datos(session: Session) -> dict[str, int]:
@@ -260,33 +342,40 @@ def cargar_datos(session: Session) -> dict[str, int]:
     # tiene siempre el mismo número, se cree en esta corrida o en una anterior.
     secuenciales = itertools.count(1)
     aspirantes = [*datos["aspirantes_cohorte_2026"], datos["aspirante_que_vence"]]
+    documentos = 0
     for fila in aspirantes:
         estado = EstadoLegajo(fila["estado"])
         numero = None
         if APROBAR in CAMINOS[estado]:  # el número se asigna al aprobar (plan §9)
             numero = generar_numero_legajo(cohorte.anio, cohorte.numero, next(secuenciales))
 
-        existe = session.exec(
-            select(LegajoORM).where(
-                LegajoORM.cohorte_id == cohorte.id, LegajoORM.dni == fila["dni"]
-            )
-        ).first()
-        if existe:
-            continue
-
         if fila["fecha_inscripcion"]:
             comienzo = datetime.combine(date.fromisoformat(fila["fecha_inscripcion"]), HORA_UTC)
         else:
             # El que vence: se inscribió de modo que la aprobación caiga hace 31 días.
             comienzo = ahora - timedelta(days=DIAS_DESDE_LA_APROBACION + APROBAR.dias)
-        _crear_legajo(session, cohorte, carreras[fila["carrera"]], fila, comienzo, numero, email)
-        nuevos += 1
+
+        legajo = session.exec(
+            select(LegajoORM).where(
+                LegajoORM.cohorte_id == cohorte.id, LegajoORM.dni == fila["dni"]
+            )
+        ).first()
+        if not legajo:
+            legajo = _crear_legajo(
+                session, cohorte, carreras[fila["carrera"]], fila, comienzo, numero, email
+            )
+            nuevos += 1
+        # Los documentos se suben antes de enviar: media hora antes de la inscripción.
+        tipos = _documentos_del_seed(estado, fila["solicita_beca"])
+        nuevos += _cargar_documentos(session, legajo, tipos, comienzo - timedelta(minutes=30))
+        documentos += len(tipos)
 
     return {
         "carreras": len(carreras),
         "cohortes": len(cohortes),
         "coordinadores": 1,
         "legajos": len(aspirantes),
+        "documentos": documentos,
         "nuevos": nuevos,
     }
 
@@ -298,8 +387,8 @@ def main() -> None:
         session.commit()
     print(
         f"Seed: {resumen['carreras']} carreras, {resumen['cohortes']} cohortes, "
-        f"{resumen['coordinadores']} coordinador, {resumen['legajos']} legajos; "
-        f"{resumen['nuevos']} nuevos"
+        f"{resumen['coordinadores']} coordinador, {resumen['legajos']} legajos, "
+        f"{resumen['documentos']} documentos; {resumen['nuevos']} nuevos"
     )
 
 

@@ -24,7 +24,16 @@ import {
   useQuery,
   useQueryClient,
 } from '@tanstack/react-query'
-import { cambiarPeriodo, listarLegajos, obtenerResumen, type FiltrosLegajos } from '../api'
+import { ApiError } from '../../shared/api/client'
+import {
+  cambiarEstado,
+  cambiarPeriodo,
+  listarLegajos,
+  obtenerLegajo,
+  obtenerResumen,
+  type CambioDeEstado,
+  type FiltrosLegajos,
+} from '../api'
 
 /** GET /legajos. Sin cohorte (todavía cargando) no pide nada. */
 export function useLegajos(filtros: FiltrosLegajos | undefined) {
@@ -40,6 +49,40 @@ export function useResumen(cohorteId: string | undefined) {
   return useQuery({
     queryKey: ['resumen', cohorteId],
     queryFn: cohorteId ? () => obtenerResumen(cohorteId) : skipToken,
+  })
+}
+
+/** GET /legajos/{id}. */
+export function useLegajo(id: string) {
+  return useQuery({
+    queryKey: ['legajo', id],
+    queryFn: () => obtenerLegajo(id),
+  })
+}
+
+/** PATCH /legajos/{id}/estado. Cuando sale bien, el detalle ya viene en
+    la respuesta (se guarda directo en la caché), y la tabla y las
+    tarjetas del dashboard se vuelven a pedir porque cambió un estado.
+    Un 409 quiere decir que el legajo cambió mientras lo mirábamos (otro
+    coordinador, la tarea de vencimiento): se vuelve a pedir para que la
+    pantalla muestre el estado y los botones de verdad. */
+export function useCambiarEstado(id: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (cambio: CambioDeEstado) => cambiarEstado(id, cambio),
+    onError: (error) => {
+      if (error instanceof ApiError && error.status === 409) {
+        return queryClient.invalidateQueries({ queryKey: ['legajo', id] })
+      }
+    },
+    onSuccess: (legajo) => {
+      queryClient.setQueryData(['legajo', id], legajo)
+      return Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['legajo', id] }),
+        queryClient.invalidateQueries({ queryKey: ['legajos'] }),
+        queryClient.invalidateQueries({ queryKey: ['resumen'] }),
+      ])
+    },
   })
 }
 

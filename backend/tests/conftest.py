@@ -35,6 +35,7 @@ from src.autenticacion.infrastructure.orm_models import UsuarioORM  # noqa: E402
 from src.shared.config import settings  # noqa: E402
 from src.shared.database import get_session, importar_modelos  # noqa: E402
 from src.shared.email.sender import BANDEJA_DE_PRUEBA  # noqa: E402
+from src.shared.limite import limite_inscripciones, limite_recuperar_acceso  # noqa: E402
 from src.shared.roles import Rol  # noqa: E402
 from tests.fabricas import crear_usuario, headers_de  # noqa: E402
 
@@ -118,3 +119,14 @@ def bandeja():
     """
     BANDEJA_DE_PRUEBA.clear()
     return BANDEJA_DE_PRUEBA
+
+
+@pytest.fixture(autouse=True)
+def limites_por_ip_en_cero():
+    """Cada test arranca con los contadores del límite por IP (E7) en cero.
+
+    Todos los tests llegan con la misma IP (`testclient`): sin esto, los envíos de un test se
+    sumarían a los del anterior y, después de 10, los formularios responderían 429.
+    """
+    limite_inscripciones.reiniciar()
+    limite_recuperar_acceso.reiniciar()

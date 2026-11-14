@@ -24,6 +24,7 @@ import type { ComoConocio } from '../shared/api/tipos'
 import type {
   CampoInscripcion,
   DatosInscripcion,
+  DatosLegajoPayload,
   Errores,
   InscripcionPayload,
   RespuestaInscripcion,
@@ -43,18 +44,25 @@ export function recuperarAcceso(email: string): Promise<RespuestaRecuperarAcceso
   })
 }
 
-/** El estado del formulario → el cuerpo de POST /legajos. */
-export function aPayload(datos: DatosInscripcion, cohorteId: string): InscripcionPayload {
+/**
+ * El estado del formulario → el cuerpo sin la cohorte. Es lo que recibe
+ * PUT /seguimiento/{token} al editar, y la base de POST /legajos.
+ */
+export function aCuerpo(datos: DatosInscripcion): DatosLegajoPayload {
   const opcional = (valor: string) => (valor.trim() === '' ? null : valor)
   return {
     ...datos,
-    cohorteId,
     telefonoFijo: opcional(datos.telefonoFijo),
     tituloPosgrado: opcional(datos.tituloPosgrado),
     // Solo se llama después de validarFormulario, que ya exige una opción.
     comoConocio: datos.comoConocio as ComoConocio,
     tipoBeca: datos.solicitaBeca ? datos.tipoBeca : null,
   }
+}
+
+/** El estado del formulario → el cuerpo de POST /legajos. */
+export function aPayload(datos: DatosInscripcion, cohorteId: string): InscripcionPayload {
+  return { ...aCuerpo(datos), cohorteId }
 }
 
 // Los campos que tienen un lugar en pantalla para su error. `solicitaBeca`

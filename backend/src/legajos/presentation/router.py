@@ -1,15 +1,18 @@
 """Endpoints del coordinador sobre los legajos: la búsqueda y el resumen del dashboard
-(US-CORE-007), y el detalle y el cambio de estado de uno (US-CORE-005).
+(US-CORE-007), el Excel de inscriptos (US-CORE-008), y el detalle y el cambio de estado de uno
+(US-CORE-005).
 
-Las rutas fijas (`/legajos/resumen` y, en L5, `/legajos/exportar`) se declaran antes que
+Las rutas fijas (`/legajos/resumen` y `/legajos/exportar`) se declaran antes que
 `/legajos/{legajo_id}`: FastAPI prueba las rutas en orden, y si no, intenta leer "resumen" como
 un UUID y contesta 422.
 """
 
+from datetime import datetime
 from typing import Any
 from uuid import UUID
+from zoneinfo import ZoneInfo
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Response
 from sqlmodel import Session
 
 from src.autenticacion.domain.usuario import Usuario
@@ -25,9 +28,11 @@ from src.legajos.application.buscar_legajos import (
     buscar_legajos,
 )
 from src.legajos.application.cambiar_estado import MENSAJE_LEGAJO_NO_ENCONTRADO, ServicioEstados
+from src.legajos.application.exportar_legajos import MAXIMO_FILAS, exportar_legajos
 from src.legajos.application.obtener_detalle import obtener_detalle
 from src.legajos.application.resumen import obtener_resumen
 from src.legajos.domain.estados import MENSAJE_COMENTARIO_OBLIGATORIO, EstadoLegajo
+from src.legajos.infrastructure.excel_exporter import generar_excel
 from src.legajos.infrastructure.pg_repository import PgLegajoRepository
 from src.legajos.presentation.dependencies import get_servicio_estados
 from src.legajos.presentation.schemas import (
@@ -36,10 +41,13 @@ from src.legajos.presentation.schemas import (
     PaginaLegajosResponse,
     ResumenLegajosResponse,
 )
+from src.shared.config import settings
 from src.shared.database import get_session
 from src.shared.roles import Rol
 
 router = APIRouter(prefix="/legajos", tags=["Legajos"])
+
+MEDIA_TYPE_XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
 solo_coordinador = require_role(Rol.COORDINADOR)
 
@@ -86,8 +94,8 @@ ERRORES_DE_ACCESO: dict[int | str, dict[str, Any]] = {
     description=(
         "Coordinador. El listado del dashboard, de a una página y con los más nuevos primero. "
         "`q` con solo dígitos busca el DNI exacto; si no, una parte del apellido sin distinguir "
-        "mayúsculas, con 3 letras como mínimo. `estado`, `cohorte`, `carrera` y `beca` se "
-        "combinan con `q`. `total` es la cantidad sin paginar. `documentosCargados` cuenta solo "
+        "mayúsculas ni tildes, con 3 letras como mínimo. `estado`, `cohorte`, `carrera` y `beca` "
+        "se combinan con `q`. `total` es la cantidad sin paginar. `documentosCargados` cuenta solo "
         "los documentos que le corresponden al aspirante."
     ),
     responses={
@@ -155,6 +163,61 @@ def resumen(
 ) -> ResumenLegajosResponse:
     return ResumenLegajosResponse.model_validate(
         obtener_resumen(cohorte, PgLegajoRepository(session))
+    )
+
+
+@router.get(
+    "/exportar",
+    response_class=Response,
+    summary="Exportar la búsqueda a Excel",
+    description=(
+        "Coordinador. Descarga un `.xlsx` con los legajos que cumplen los mismos filtros que "
+        f"`GET /legajos`, sin paginar (hasta {MAXIMO_FILAS}), los más nuevos primero. Columnas: "
+        "Nº Legajo, Apellido y nombre, DNI, Estado, Carrera y Fecha inscripción; encabezados en "
+        "negrita, columnas ajustadas y filtro automático. El archivo se llama "
+        "`inscriptos-cohorte2026-2026-11-08.xlsx` (con la fecha de hoy en Argentina) o, sin "
+        "`cohorte`, `inscriptos-todas-2026-11-08.xlsx`."
+    ),
+    responses={
+        200: {
+            "description": "El archivo Excel",
+            "content": {MEDIA_TYPE_XLSX: {"schema": {"type": "string", "format": "binary"}}},
+        },
+        **ERRORES_DE_SESION,
+        404: {
+            "description": "`cohorte` no corresponde a ninguna cohorte",
+            **_error(404, "NOT_FOUND", "No encontramos la cohorte del legajo"),
+        },
+        422: {
+            "description": (
+                "`q` con letras y menos de 3 caracteres, o un parámetro con un valor que no "
+                "corresponde (un estado que no existe, un id que no es UUID)"
+            ),
+            **_error(422, "VALIDATION_ERROR", MENSAJE_APELLIDO_CORTO, "q"),
+        },
+    },
+)
+def exportar(
+    q: str | None = Query(
+        None,
+        max_length=100,
+        description="DNI exacto (solo dígitos) o parte del apellido (3 letras o más)",
+        examples=["rodr"],
+    ),
+    estado: EstadoLegajo | None = Query(None, description="Un solo estado"),
+    cohorte: UUID | None = Query(None, description="Id de la cohorte; sin él, todas"),
+    carrera: UUID | None = Query(None, description="Id de la carrera, en 1ª o 2ª opción"),
+    beca: bool | None = Query(None, description="`true` solo los que pidieron beca"),
+    _: Usuario = Depends(solo_coordinador),
+    session: Session = Depends(get_session),
+) -> Response:
+    filtros = FiltrosBusqueda(q=q, estado=estado, cohorte_id=cohorte, carrera_id=carrera, beca=beca)
+    hoy = datetime.now(ZoneInfo(settings.zona_horaria)).date()
+    exportacion = exportar_legajos(filtros, PgLegajoRepository(session), hoy)
+    return Response(
+        content=generar_excel(exportacion.filas),
+        media_type=MEDIA_TYPE_XLSX,
+        headers={"Content-Disposition": f'attachment; filename="{exportacion.nombre_archivo}"'},
     )
 
 

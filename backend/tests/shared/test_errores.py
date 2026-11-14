@@ -95,6 +95,10 @@ def cliente():
     def roto():
         raise RuntimeError("detalle interno que no tiene que salir")
 
+    @app.get("/api/v1/seguimiento/{token}/roto")
+    def roto_con_token(token: str):
+        raise RuntimeError("falla en el seguimiento")
+
     # Con el valor por defecto, el TestClient vuelve a levantar la excepción de los 500
     # aunque el manejador ya haya respondido.
     return TestClient(app, raise_server_exceptions=False)
@@ -227,3 +231,13 @@ def test_un_error_inesperado_da_500_sin_detalles_internos_y_queda_en_el_log(clie
     assert "detalle interno" not in respuesta.text
     assert "detalle interno" in caplog.text
     assert respuesta.headers["x-content-type-options"] == "nosniff"
+
+
+def test_el_log_de_un_500_no_guarda_el_token_del_link_de_seguimiento(cliente, caplog):
+    token = "Q3JxVq0yZ2l4b2w-dGVzdF9fdG9rZW4"
+
+    respuesta = cliente.get(f"/api/v1/seguimiento/{token}/roto")
+
+    assert respuesta.status_code == 500
+    assert token not in caplog.text
+    assert "Error no controlado en GET /api/v1/seguimiento/***/roto" in caplog.text

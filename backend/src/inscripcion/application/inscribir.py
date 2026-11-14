@@ -35,12 +35,13 @@ class LegajoCreado:
     estado: EstadoLegajo
 
 
-def inscribir(
-    datos: DatosInscripcion,
-    repo: InscripcionRepository,
-    crear_link: CrearLink,
-    enviar_link: EnviarLink,
-) -> LegajoCreado:
+def controlar_formulario(
+    datos: DatosInscripcion, repo: InscripcionRepository, excepto: UUID | None = None
+) -> None:
+    """Las reglas del formulario que dependen de la base: las mismas al inscribirse y al editar.
+
+    `excepto` es el legajo que se edita: su propio DNI y su propio email no cuentan como repetidos.
+    """
     cohorte = repo.obtener_cohorte(datos.cohorte_id)
     if cohorte is None:
         raise ErrorDeValidacion(MENSAJE_COHORTE_INEXISTENTE, campo="cohorteId")
@@ -50,10 +51,19 @@ def inscribir(
     if repo.carreras_activas(datos.carrera_ids) != set(datos.carrera_ids):
         raise ErrorDeValidacion(MENSAJE_CARRERA_NO_DISPONIBLE, campo="carreraIds")
 
-    if repo.existe_dni(datos.cohorte_id, datos.dni):
+    if repo.existe_dni(datos.cohorte_id, datos.dni, excepto):
         raise Conflicto(MENSAJE_DNI_REPETIDO, campo="dni")
-    if repo.existe_email(datos.cohorte_id, datos.email):
+    if repo.existe_email(datos.cohorte_id, datos.email, excepto):
         raise Conflicto(MENSAJE_EMAIL_REPETIDO, campo="email")
+
+
+def inscribir(
+    datos: DatosInscripcion,
+    repo: InscripcionRepository,
+    crear_link: CrearLink,
+    enviar_link: EnviarLink,
+) -> LegajoCreado:
+    controlar_formulario(datos, repo)
 
     # 8 caracteres hexadecimales: lo que el aspirante dicta por teléfono si llama a consultar.
     codigo = secrets.token_hex(4).upper()

@@ -9,7 +9,11 @@ from typing import Protocol
 from uuid import UUID
 
 from src.cohortes.domain.cohorte import Cohorte
-from src.inscripcion.domain.inscripcion import DatosInscripcion, LegajoDelAspirante
+from src.inscripcion.domain.inscripcion import (
+    DatosInscripcion,
+    LegajoDelAspirante,
+    LegajoEnEdicion,
+)
 
 
 class InscripcionRepository(Protocol):
@@ -21,12 +25,27 @@ class InscripcionRepository(Protocol):
         """De esos ids, los de las carreras que existen y están activas."""
         ...
 
-    def existe_dni(self, cohorte_id: UUID, dni: str) -> bool: ...
+    def existe_dni(self, cohorte_id: UUID, dni: str, excepto: UUID | None = None) -> bool:
+        """Si otro legajo de la cohorte tiene ese DNI. `excepto`: el legajo que se edita."""
+        ...
 
-    def existe_email(self, cohorte_id: UUID, email: str) -> bool: ...
+    def existe_email(self, cohorte_id: UUID, email: str, excepto: UUID | None = None) -> bool:
+        """Si otro legajo de la cohorte tiene ese email. `excepto`: el legajo que se edita."""
+        ...
 
     def crear_legajo(self, datos: DatosInscripcion, codigo_seguimiento: str) -> UUID:
         """Guarda el legajo en BORRADOR con sus carreras y devuelve su id.
+
+        Si otro pedido guardó el mismo DNI o email en el medio, levanta `Conflicto`.
+        """
+        ...
+
+    def legajo_en_edicion(self, legajo_id: UUID) -> LegajoEnEdicion | None:
+        """El estado y la cohorte del legajo, o `None` si no existe."""
+        ...
+
+    def actualizar_legajo(self, legajo_id: UUID, datos: DatosInscripcion) -> None:
+        """Reemplaza los datos y las carreras del legajo (no toca estado, código ni cohorte).
 
         Si otro pedido guardó el mismo DNI o email en el medio, levanta `Conflicto`.
         """

@@ -20,6 +20,7 @@ from src.inscripcion.domain.inscripcion import (
     MENSAJE_EMAIL_REPETIDO,
     DatosInscripcion,
     LegajoDelAspirante,
+    LegajoEnEdicion,
     mensaje_periodo_cerrado,
 )
 from src.inscripcion.domain.tipos import ComoConocio
@@ -34,6 +35,7 @@ class RepoEnMemoria:
         self.cohortes = {cohorte.id: cohorte for cohorte in cohortes}
         self.activas = set(carreras_activas)
         self.legajos: list[tuple[UUID, DatosInscripcion, str]] = []
+        self.estados: dict[UUID, EstadoLegajo] = {}
 
     def obtener_cohorte(self, cohorte_id: UUID) -> Cohorte | None:
         return self.cohortes.get(cohorte_id)
@@ -41,16 +43,31 @@ class RepoEnMemoria:
     def carreras_activas(self, carrera_ids: Sequence[UUID]) -> set[UUID]:
         return self.activas & set(carrera_ids)
 
-    def existe_dni(self, cohorte_id: UUID, dni: str) -> bool:
-        return any(d.cohorte_id == cohorte_id and d.dni == dni for _, d, _ in self.legajos)
+    def existe_dni(self, cohorte_id: UUID, dni: str, excepto: UUID | None = None) -> bool:
+        return any(
+            i != excepto and d.cohorte_id == cohorte_id and d.dni == dni for i, d, _ in self.legajos
+        )
 
-    def existe_email(self, cohorte_id: UUID, email: str) -> bool:
-        return any(d.cohorte_id == cohorte_id and d.email == email for _, d, _ in self.legajos)
+    def existe_email(self, cohorte_id: UUID, email: str, excepto: UUID | None = None) -> bool:
+        return any(
+            i != excepto and d.cohorte_id == cohorte_id and d.email == email
+            for i, d, _ in self.legajos
+        )
 
     def crear_legajo(self, datos: DatosInscripcion, codigo_seguimiento: str) -> UUID:
         legajo_id = uuid4()
         self.legajos.append((legajo_id, datos, codigo_seguimiento))
+        self.estados[legajo_id] = EstadoLegajo.BORRADOR
         return legajo_id
+
+    def legajo_en_edicion(self, legajo_id: UUID) -> LegajoEnEdicion | None:
+        for i, datos, _ in self.legajos:
+            if i == legajo_id:
+                return LegajoEnEdicion(i, datos.cohorte_id, self.estados[i])
+        return None
+
+    def actualizar_legajo(self, legajo_id: UUID, datos: DatosInscripcion) -> None:
+        self.legajos = [(i, datos if i == legajo_id else d, c) for i, d, c in self.legajos]
 
     def buscar_ultimo_por_email(self, email: str) -> LegajoDelAspirante | None:
         for legajo_id, datos, codigo in reversed(self.legajos):

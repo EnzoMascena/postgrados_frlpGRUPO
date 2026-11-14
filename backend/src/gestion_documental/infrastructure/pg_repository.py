@@ -29,6 +29,10 @@ class PgDocumentoRepository:
             tiene_titulo_posgrado=fila.titulo_posgrado is not None,
         )
 
+    def tipos_cargados(self, legajo_id: UUID) -> list[TipoDocumento]:
+        consulta = select(DocumentoORM.tipo).where(DocumentoORM.legajo_id == legajo_id)
+        return [TipoDocumento(tipo) for tipo in self.session.exec(consulta)]
+
     def documento(self, documento_id: UUID) -> DocumentoGuardado | None:
         fila = self.session.get(DocumentoORM, documento_id)
         return _a_dominio(fila) if fila else None

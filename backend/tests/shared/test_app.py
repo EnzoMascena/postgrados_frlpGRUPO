@@ -1,9 +1,10 @@
-"""La app real (`main.app`): Swagger, headers de seguridad y CORS. No necesitan la base."""
+"""La app real (`main.app`): Swagger, headers, CORS y el arranque. No necesitan la base."""
 
 import pytest
 from fastapi.testclient import TestClient
 
 from main import app
+from src.shared.config import settings
 
 CSP_DE_LA_API = "default-src 'none'; frame-ancestors 'none'"
 ORIGEN_DEL_FRONT = "http://localhost:3000"
@@ -69,3 +70,36 @@ def test_cors_no_permite_otros_origenes(cliente_sin_base):
     )
 
     assert "access-control-allow-origin" not in respuesta.headers
+
+
+# --- La tarea de vencimiento (E6) se programa al arrancar la API ---
+
+
+def test_en_los_tests_la_api_no_programa_la_tarea_de_vencimiento(monkeypatch):
+    llamadas = []
+    monkeypatch.setattr("main.iniciar_programador", lambda: llamadas.append("iniciar"))
+
+    with TestClient(app):  # con `with` corre el lifespan: el arranque y el apagado de la API
+        pass
+
+    assert llamadas == []
+
+
+def test_fuera_de_los_tests_la_api_programa_la_tarea_y_la_frena_al_apagarse(monkeypatch):
+    eventos = []
+
+    class ProgramadorFalso:
+        def shutdown(self) -> None:
+            eventos.append("frenar")
+
+    def iniciar() -> ProgramadorFalso:
+        eventos.append("iniciar")
+        return ProgramadorFalso()
+
+    monkeypatch.setattr("main.iniciar_programador", iniciar)
+    monkeypatch.setattr(settings, "environment", "development")
+
+    with TestClient(app):
+        assert eventos == ["iniciar"]
+
+    assert eventos == ["iniciar", "frenar"]

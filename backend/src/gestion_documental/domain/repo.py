@@ -16,6 +16,10 @@ class DocumentoRepository(Protocol):
         """Los datos del legajo que importan para subir un PDF, o `None` si no existe."""
         ...
 
+    def tipos_cargados(self, legajo_id: UUID) -> list[TipoDocumento]:
+        """Los tipos de documento que ya subió el aspirante (como mucho uno de cada uno)."""
+        ...
+
     def documento(self, documento_id: UUID) -> DocumentoGuardado | None:
         """El documento con ese id, de cualquier legajo, o `None` si no existe."""
         ...

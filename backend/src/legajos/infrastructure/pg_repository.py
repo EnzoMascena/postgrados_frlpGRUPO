@@ -264,9 +264,11 @@ def _condiciones(criterios: CriteriosBusqueda) -> list[Any]:
     if criterios.dni is not None:
         condiciones.append(LegajoORM.dni == criterios.dni)
     if criterios.apellido is not None:
-        # `%texto%` no usa el índice, y está bien para ~500 aspirantes por cohorte.
+        # `%texto%` no usa el índice, y está bien para ~500 aspirantes por cohorte. Las dos puntas
+        # pasan por `_sin_tildes`: "garcia" encuentra "García" y "garcía" encuentra "Garcia".
+        patron = f"%{_escapar_like(criterios.apellido)}%"
         condiciones.append(
-            col(LegajoORM.apellido).ilike(f"%{_escapar_like(criterios.apellido)}%", escape="\\")
+            _sin_tildes(col(LegajoORM.apellido)).like(_sin_tildes(patron), escape="\\")
         )
     if criterios.estado is not None:
         condiciones.append(LegajoORM.estado == criterios.estado.value)
@@ -286,6 +288,18 @@ def _condiciones(criterios: CriteriosBusqueda) -> list[Any]:
 
 def _de_la_cohorte(cohorte_id: UUID | None) -> list[Any]:
     return [LegajoORM.cohorte_id == cohorte_id] if cohorte_id is not None else []
+
+
+# `translate` es de PostgreSQL: no hace falta la extensión `unaccent`, que tendría que crear una
+# migración y no existiría en la base de los tests (se arma con `create_all`). Alcanza para el
+# castellano. Va después de `lower`, así que solo hacen falta las minúsculas.
+_CON_TILDE = "áéíóúüñ"
+_SIN_TILDE = "aeiouun"
+
+
+def _sin_tildes(expresion: Any) -> Any:
+    """En minúsculas y sin tildes, diéresis ni eñe. Un `str` viaja como parámetro (NFR-S03)."""
+    return func.translate(func.lower(expresion), _CON_TILDE, _SIN_TILDE)
 
 
 def _escapar_like(texto: str) -> str:
