@@ -1,6 +1,6 @@
 # Guía de uso · Sistema de Posgrado UTN FRLP
 
-> **Al 9/11.** Enviar, editar y reenviar (aspirante) usan G4 (#63), y exportar a Excel (coordinador) usa L5 (#66) y D6 (#61): las capturas se sacaron con esas ramas, que esperan merge.
+> **Versión v0.5 (Core).** Las capturas son de esta versión.
 
 Para levantarlo: `docker compose up --build` y entrar a http://localhost:3000. Los emails de prueba llegan a MailHog: http://localhost:8025.
 

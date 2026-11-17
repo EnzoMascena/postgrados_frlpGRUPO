@@ -11,6 +11,10 @@ Este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 
 > Los cambios que están en `develop` pero no en un release van acá.
 
+---
+
+## [v0.5.0] — Core completo (10/11/2026)
+
 ### Added
 - Estructura inicial del repositorio
 - Documentación base: SRS, PRD, BFD, Arquitectura, Cronograma
@@ -47,6 +51,7 @@ Este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 - Enviar y corregir desde la página de seguimiento: "Enviar a revisión" en Borrador y "Reenviar corrección" en Observado, deshabilitado con la lista de los documentos que faltan, confirmación en un modal y aviso de éxito; si el back responde `DOCUMENTOS_FALTANTES`, marca en rojo los que faltan. "Editar mis datos" abre el formulario de la inscripción con los datos actuales y guarda con `PUT /seguimiento/{token}`, con los errores del back al lado de cada campo
 - Prueba del flujo completo por la API (`tests/test_flujo_completo.py`): de la inscripción a la matrícula con una observación y su corrección, el período cerrado y el vencimiento de la reserva a los 30 días
 - Guion de la demo del Core en `docs/DEMO_CORE.md`: 20 minutos en bloques con quién presenta cada parte, los datos para copiar, cómo preparar la máquina y los PDFs, qué hacer si algo falla y las preguntas probables
+- Guía de uso del aspirante y del coordinador en `docs/GUIA_USO.md`, con una captura por paso
 
 ### Changed
 - `docker-compose.yml` y `.env.example` reemplazan las plantillas viejas de Node

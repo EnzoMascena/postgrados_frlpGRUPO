@@ -3,7 +3,7 @@
 
 [![Estado](https://img.shields.io/badge/estado-En%20Desarrollo-yellow)](#)
 [![Cobertura objetivo](https://img.shields.io/badge/cobertura-≥70%25-green)](#)
-[![Semana actual](https://img.shields.io/badge/semana-1%20de%2032-blue)](#)
+[![Versión](https://img.shields.io/badge/versión-v0.5%20·%20Core-blue)](CHANGELOG.md)
 
 > **Proyecto integrador** de la cátedra **Desarrollo de Software** — 3° año · Turno NOche · Ingeniería en Sistemas de Información · UTN FRLP · 2026
 
